@@ -89,9 +89,23 @@ namespace exathread {
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U&> operator*();
 
+		/**
+		 * @brief Obtain the task result, blocking if not complete
+		 *
+		 * This function does not exist in the @c void specialization of this type
+		 *
+		 * @return The result of the task
+		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, const U&> operator*() const;
 
+		/**
+		 * @brief Obtain the task result, blocking if not complete
+		 *
+		 * This function does not exist in the @c void specialization of this type
+		 *
+		 * @return The result of the task
+		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U*> operator->();
 
