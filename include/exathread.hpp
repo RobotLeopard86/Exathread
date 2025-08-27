@@ -1,7 +1,7 @@
 /**
  * @file exathread.hpp
- * @author RobotLeopard86
- * @version 1.0.0
+ * @author Created by RobotLeopard86
+ * @version Version 1.0.0
  * @copyright Copyright (c) 2025 RobotLeopard86, licensed under the Apache License 2.0
  */
 
@@ -59,12 +59,14 @@ namespace exathread {
 	/**
 	 * @brief Task coroutine management class
 	 *
-	 * @warning Do not interface with this class directly; it is documented but is not meant for general use
+	 * @warning Do not interface with this struct directly; it is documented but is not meant for general use
 	 */
 	template<typename T = void>
 	struct Task {
 		/**
 		 * @brief Low-level coroutine behavior representation
+		 *
+		 * @warning Do not interface with this struct directly; it is documented but is not meant for general use
 		 */
 		struct promise_type {
 			std::optional<T> val;		 ///<The stored result value
@@ -162,7 +164,7 @@ namespace exathread {
 		 *
 		 * @return Completion state
 		 */
-		bool isDone() const noexcept {
+		bool done() const noexcept {
 			return !h || h.done();
 		}
 
@@ -172,7 +174,7 @@ namespace exathread {
 		 * @throws std::logic_error If the task is done
 		 */
 		void resume() {
-			if(isDone()) throw std::logic_error("Cannot resume a done task!");
+			if(done()) throw std::logic_error("Cannot resume a done task!");
 			h.resume();
 		}
 
@@ -204,10 +206,27 @@ namespace exathread {
 		}
 	};
 
+	template<typename T = void>
+	class Future;
+
+	template<typename T = void>
+	class MultiFuture;
+
+	/**
+	 * @brief The current state of a future
+	 */
+	enum class Status {
+		Scheduled,
+		Cancelled,
+		Executing,
+		Yielded,
+		Complete
+	};
+
 	/**
 	 * @brief A task in a given pool which will eventually resolve to a result
 	 */
-	template<typename T = void>
+	template<typename T>
 	class Future {
 	  public:
 		///@cond
@@ -216,30 +235,35 @@ namespace exathread {
 		///@endcond
 
 		/**
-		 * @brief The current state of a task
-		 */
-		enum class Status {
-			Scheduled,
-			Cancelled,
-			Executing,
-			Yielded,
-			Complete
-		};
-
-		/**
-		 * @brief Block until the task has completed execution
+		 * @brief Block until execution had completed
+		 *
+		 * @throws std::runtime_error If the future is cancelled during this operation
 		 */
 		void await();
 
 		/**
-		 * @brief Get the status of a task
+		 * @brief Get the status of a future
 		 *
-		 * @returns The task's current status
+		 * @returns The future's current status
 		 */
 		Status checkStatus() const noexcept;
 
 		/**
-		 * @brief Schedule a tracked task for execution after this task
+		 * @brief Cancel the future if it has not yet been executed
+		 *
+		 * This function does nothing if the future has already begun execution, been cancelled, or completed.
+		 */
+		void cancel() noexcept;
+
+		/**
+		 * @brief Get the pool that this future exists on
+		 *
+		 * @returns The pool if it still exists, or an empty pointer otherwise
+		 */
+		std::shared_ptr<Pool> getPool() noexcept;
+
+		/**
+		 * @brief Schedule a tracked task for execution after this future
 		 *
 		 * @tparam F Function type
 		 * @tparam ExArgs Arguments to the function
@@ -248,15 +272,15 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the task has been completed or cancelled
-		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, ExArgs&&...>>
 			requires std::invocable<F&&, T&&, ExArgs&&...>
 		Future<R> then(F func, ExArgs... exargs);
 
 		/**
-		 * @brief Schedule a tracked task for execution after this task with no result
+		 * @brief Schedule a tracked task for execution after this future with no result
 		 *
 		 * @tparam F Function type
 		 * @tparam ExArgs Extra arguments to the function
@@ -264,15 +288,15 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the task has been completed or cancelled
-		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs>
 			requires std::invocable<F&&, T&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T&&, ExArgs&&...>>
 		void thenDetached(F func, ExArgs... exargs);
 
 		/**
-		 * @brief Schedule a tracked batch job based on a container for execution after this task
+		 * @brief Schedule a tracked batch job based on a container for execution after this future
 		 *
 		 * @tparam Rn Input range type
 		 * @tparam F Function type
@@ -283,15 +307,15 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the task has been completed or cancelled
-		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
 			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...>
-		std::vector<Future<R>> thenBatch(Rn&& src, F func, ExArgs... exargs);
+		MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
 
 		/**
-		 * @brief Schedule a batch job based on a container for execution after this task with no result
+		 * @brief Schedule a batch job based on a container for execution after this future with no result
 		 *
 		 * @tparam Rn Input range type
 		 * @tparam F Function type
@@ -301,8 +325,8 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the task has been completed or cancelled
-		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
 			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
@@ -315,7 +339,7 @@ namespace exathread {
 		 *
 		 * @return The result of the task
 		 *
-		 * @throws std::runtime_error If the task is cancelled during this operation
+		 * @throws std::runtime_error If the future is cancelled during this operation
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U&> operator*();
@@ -327,7 +351,7 @@ namespace exathread {
 		 *
 		 * @return The result of the task
 		 *
-		 * @throws std::runtime_error If the task is cancelled during this operation
+		 * @throws std::runtime_error If the future is cancelled during this operation
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, const U&> operator*() const;
@@ -339,7 +363,7 @@ namespace exathread {
 		 *
 		 * @return The result of the task
 		 *
-		 * @throws std::runtime_error If the task is cancelled during this operation
+		 * @throws std::runtime_error If the future is cancelled during this operation
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U*> operator->();
@@ -354,6 +378,139 @@ namespace exathread {
 	  private:
 		std::weak_ptr<Pool> pool;
 		Task<T> task;
+	};
+
+	/**
+	 * @brief Aggregate container of multiple futures
+	 */
+	template<typename T>
+	class MultiFuture {
+	  public:
+		/**
+		 * @brief Create a MultiFuture with a collection of futures
+		 *
+		 * @throws std::logic_error If any of the futures belongs to a different pools from the others
+		 */
+		explicit MultiFuture(Future<T>&&, ...);
+
+		/**
+		 * @brief Get the number of collected futures
+		 *
+		 * @returns Future count
+		 */
+		std::size_t size() const noexcept;
+
+		/**
+		 * @brief Block until all futures have completed execution
+		 *
+		 * @throws std::runtime_error If any future is cancelled during this operation
+		 */
+		void await();
+
+		/**
+		 * @brief Get the overall status of the collection
+		 *
+		 * @details The status progresses as follows: starting at Scheduled, once a future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Cancelled if a future is cancelled. The Yielding status is never returned.
+		 *
+		 * @returns The overall status
+		 */
+		Status checkStatus() const noexcept;
+
+		/**
+		 * @brief Cancel all futures that have not yet been executed
+		 *
+		 * This function does nothing to futures that have already begun execution, been cancelled, or completed.
+		 */
+		void cancel() noexcept;
+
+		/**
+		 * @brief Get the pool that the futures exist on
+		 *
+		 * @returns The pool if it still exists, or an empty pointer otherwise
+		 */
+		std::shared_ptr<Pool> getPool() noexcept;
+
+		/**
+		 * @brief Schedule a tracked task for execution after these futures
+		 *
+		 * @tparam F Function type
+		 * @tparam ExArgs Arguments to the function
+		 * @tparam R Function return type
+		 *
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
+		 */
+		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
+			requires std::invocable<F&&, std::vector<T>&&, ExArgs&&...>
+		Future<R> then(F func, ExArgs... exargs);
+
+		/**
+		 * @brief Schedule a tracked task for execution after these futures with no result
+		 *
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra arguments to the function
+		 *
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
+		 */
+		template<typename F, typename... ExArgs>
+			requires std::invocable<F&&, std::vector<T>&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
+		void thenDetached(F func, ExArgs... exargs);
+
+		/**
+		 * @brief Schedule a tracked batch job based on a container for execution after these futures
+		 *
+		 * @tparam Rn Input range type
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam R Function return type
+		 *
+		 * @param src The source range to iterate over
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
+		 */
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>>
+			requires std::invocable<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>
+		MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
+
+		/**
+		 * @brief Schedule a batch job based on a container for execution after these futures with no result
+		 *
+		 * @tparam Rn Input range type
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra rguments to the function
+		 *
+		 * @param src The source range to iterate over
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
+		 */
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
+			requires std::invocable<F&&, std::vector<T>&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>>
+		void thenBatchDetached(Rn&& src, F func, ExArgs... exargs);
+
+		/**
+		 * @brief Get the results of the futures, blocking if not complete
+		 *
+		 * @returns A list of results corresponding to the order of futures as placed in the constructor
+		 *
+		 * @throws std::runtime_error If any future is cancelled during this operation
+		 */
+		std::vector<T> results();
+
+	  private:
+		std::vector<Future<T>> futures;
 	};
 
 	/**
@@ -421,7 +578,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, Rn&&, ExArgs&&...>>
 			requires std::invocable<F&&, Rn&&, ExArgs&&...>
-		std::vector<Future<R>> batch(Rn&& src, F func, ExArgs... exargs);
+		MultiFuture<R> batch(Rn&& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Submit a batch job based on a container into the pool with no result
@@ -467,6 +624,77 @@ namespace exathread {
 	 * @returns An optional containing a pool pointer if the current thread is a worker, or nothing otherwise
 	 */
 	std::optional<std::shared_ptr<Pool>> getCurrentThreadPool();
+
+	///@cond
+	struct Awaitable;
+	///@endcond
+
+	/**
+	 * @brief Suspend execution of your task and allow other tasks to run for a certain period of time
+	 *
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 *
+	 * @param duration The amount of time to yield for. It is not guaranteed that execution will resume exactly at the specified time amount
+	 *
+	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
+	 */
+	template<typename Rep, typename Period>
+	Awaitable yieldFor(const std::chrono::duration<Rep, Period>& duration);
+
+	/**
+	 * @brief Suspend execution of your task and allow other tasks to run until a certain point in time
+	 *
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 *
+	 * @param time The point in time until which to yield. It is not guaranteed that execution will resume exactly at the specified time point
+	 *
+	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
+	 *
+	 * @throws std::logic_error If the specified time point is in the past
+	 */
+	template<typename Rep, typename Period>
+	Awaitable yieldUntil(const std::chrono::duration<Rep, Period>& time);
+
+	/**
+	 * @brief Suspend execution of your task and allow other tasks to run until a certain condition is met
+	 *
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 *
+	 * @param predicate A function that will evaluate the condition to determine if execution should resume. It should not have side effects.
+	 *
+	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
+	 */
+	Awaitable yieldUntilTrue(std::function<bool()> predicate);
+
+	/**
+	 * @brief Suspend execution of your task and allow other tasks to run until a future resolves
+	 *
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 * @warning If the submitted future is cancelled during the yield, the task state will be destroyed and execution will not resume.\n Manually-allocated memory will not be freed. Consider using smart pointers to avoid this.
+	 *
+	 * @param future The future of which to yield until completion. It is not guaranteed that execution will resume exactly when the future becomes complete.
+	 *
+	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
+	 *
+	 * @throws std::logic_error If the specified future has already been completed or cancelled
+	 */
+	template<typename T>
+	Awaitable yieldUntilComplete(Future<void> future);
+
+	/**
+	 * @brief Suspend execution of your task and allow other tasks to run until futures resolve
+	 *
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 * @warning If any of the submitted futures are cancelled during the yield, the task state will be destroyed and execution will not resume.\n Manually-allocated memory (for example, raw @c new or @c malloc) will not be freed. Consider using smart pointers to avoid this.
+	 *
+	 * @param futures The futures of which to yield until completion. It is not guaranteed that execution will resume exactly when the futures become complete.
+	 *
+	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
+	 *
+	 * @throws std::logic_error If the specified futures have already been completed or cancelled
+	 */
+	template<typename T>
+	Awaitable yieldUntilComplete(MultiFuture<void> futures);
 }
 
 //The implementation goes down here

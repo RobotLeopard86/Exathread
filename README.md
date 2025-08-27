@@ -10,8 +10,8 @@ Exathread is a powerful header-only C++ thread pool management library for C++20
 * Work-stealing task queue
 * Future aggregation
 * Task continuation scheduling
-* Coroutine-based task suspension
-* Batch job parallelization
+* Coroutine-based cooperative worker yielding to avoid spinlocks
+* Automatic batch job parallelization
 
 ## Usage
 CMake and Meson build definitions are provided to make it easier to use the library, however you can also just copy `exathread.hpp` to wherever needed

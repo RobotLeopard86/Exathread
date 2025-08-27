@@ -25,12 +25,11 @@ html_domain_indices = False
 html_copy_source = False
 html_static_path = ["assets"]
 html_css_files = ["fonts.css"]
-html_extra_path = ['_static/index.html']
 
 breathe_projects = {
-    "Cacao Engine": "./.doxygen/xml"
+    "Exathread": "./.doxygen/xml"
 }
-breathe_default_project = "Cacao Engine"
+breathe_default_project = "Exathread"
 
 exhale_args = {
     "containmentFolder":     "./api",
@@ -41,7 +40,8 @@ exhale_args = {
     "exhaleExecutesDoxygen": True,
     "afterTitleDescription": "Welcome to the Exathread documentation. Here you can find comprehensive API information. Check out the API map below.",
     "exhaleDoxygenStdin": dedent('''
-									INPUT = ../include
+									INPUT = ../include/exathread.hpp
+                                    EXCLUDE_SYMBOLS = std
 									HIDE_UNDOC_MEMBERS = YES
 									MAX_INITIALIZER_LINES = 0
 									''')
