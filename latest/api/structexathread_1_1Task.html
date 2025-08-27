@@ -335,10 +335,10 @@
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ae7c2e339a67aa230df3077f1eb908472.html">Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a045bec0762a9536fbab63407055a43ca.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;T&gt;)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
@@ -449,7 +449,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4TaskD0Ev">
-<span id="_CPPv3N9exathread4TaskD0Ev"></span><span id="_CPPv2N9exathread4TaskD0Ev"></span><span id="exathread::Task::~Task"></span><span class="target" id="structexathread_1_1Task_1a2d21db6f2c22ab6d29cfa735196090aa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~Task</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4TaskD0Ev" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3N9exathread4TaskD0Ev"></span><span id="_CPPv2N9exathread4TaskD0Ev"></span><span id="exathread::Task::~Task"></span><span class="target" id="structexathread_1_1Task_1a6fd2e49e58bd51c0811f6b79b2611a10"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~Task</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread4TaskD0Ev" title="Link to this definition"><span/></a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
@@ -569,7 +569,7 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_type3valE">
-<span id="_CPPv3N9exathread4Task12promise_type3valE"></span><span id="_CPPv2N9exathread4Task12promise_type3valE"></span><span id="exathread::Task::promise_type::val__std::optional:T:"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1ae4996c67fd74c1d222ab22d887e76a42"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread4TaskE" title="exathread::Task::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">val</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type3valE" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3N9exathread4Task12promise_type3valE"></span><span id="_CPPv2N9exathread4Task12promise_type3valE"></span><span id="exathread::Task::promise_type::val__std::enable_if_t:!std::is_void_v<T>.std::optional:T::"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1a2a657fc225a2eac6f4c070f5b50d3be8"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">enable_if_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="o"><span class="pre">!</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_void_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread4TaskE" title="exathread::Task::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread4TaskE" title="exathread::Task::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">val</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type3valE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>The stored result value. </p>
 </dd></dl>
 

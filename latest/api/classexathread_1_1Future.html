@@ -335,10 +335,10 @@
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ae7c2e339a67aa230df3077f1eb908472.html">Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a045bec0762a9536fbab63407055a43ca.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;T&gt;)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
@@ -441,7 +441,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future7getPoolEv">
-<span id="_CPPv3N9exathread6Future7getPoolEv"></span><span id="_CPPv2N9exathread6Future7getPoolEv"></span><span id="exathread::Future::getPool"></span><span class="target" id="classexathread_1_1Future_1ae6ca14e0b7a403716fa795b47995fec6"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE" title="exathread::Pool"><span class="n"><span class="pre">Pool</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getPool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread6Future7getPoolEv" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3N9exathread6Future7getPoolEv"></span><span id="_CPPv2N9exathread6Future7getPoolEv"></span><span id="exathread::Future::getPool"></span><span class="target" id="classexathread_1_1Future_1a7e6749e5666e82b41bedb78308696dc4"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">weak_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE" title="exathread::Pool"><span class="n"><span class="pre">Pool</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getPool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread6Future7getPoolEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Get the pool that this future exists on. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -567,7 +567,10 @@
 <p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">The</span></span></span> – exception thrown by the task if failed </p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The result of the task</p>
@@ -582,7 +585,10 @@
 <p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">The</span></span></span> – exception thrown by the task if failed </p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The result of the task</p>
@@ -597,7 +603,10 @@
 <p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">The</span></span></span> – exception thrown by the task if failed </p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The result of the task</p>
