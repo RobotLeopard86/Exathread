@@ -308,9 +308,6 @@
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread.html">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_std.html">Namespace std</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task.html">Template Struct Task</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
@@ -320,10 +317,31 @@
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1MultiFuture.html">Template Class MultiFuture</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Pool.html">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html">Template Function exathread::yieldFor</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
 </ul>
 </div>
 </nav></div>
@@ -394,6 +412,10 @@
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_typeE">
 <span id="_CPPv3N9exathread4Task12promise_typeE"></span><span id="_CPPv2N9exathread4Task12promise_typeE"></span><span id="exathread::Task::promise_type"></span><span class="target" id="structexathread_1_1Task_1_1promise__type"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">promise_type</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_typeE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Low-level coroutine behavior representation. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not interface with this struct directly; it is documented but is not meant for general use </p>
+</div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">

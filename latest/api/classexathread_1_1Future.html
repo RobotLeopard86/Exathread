@@ -54,7 +54,7 @@
         </script>
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Class Pool" href="classexathread_1_1Pool.html" />
+    <link rel="next" title="Template Class MultiFuture" href="classexathread_1_1MultiFuture.html" />
     <link rel="prev" title="Struct Task::promise_type" href="structexathread_1_1Task_1_1promise__type.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -308,9 +308,6 @@
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread.html">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_std.html">Namespace std</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task.html">Template Struct Task</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -320,10 +317,31 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Template Class Future</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1MultiFuture.html">Template Class MultiFuture</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Pool.html">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html">Template Function exathread::yieldFor</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
 </ul>
 </div>
 </nav></div>
@@ -388,58 +406,46 @@
 <h2>Class Documentation<a class="headerlink" href="#class-documentation" title="Link to this heading"><span/></a></h2>
 <dl class="cpp class">
 <dt class="sig sig-object cpp" id="_CPPv4I0EN9exathread6FutureE">
-<span id="_CPPv3I0EN9exathread6FutureE"></span><span id="_CPPv2I0EN9exathread6FutureE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Future</span></span></span><a class="headerlink" href="#_CPPv4I0EN9exathread6FutureE" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3I0EN9exathread6FutureE"></span><span id="_CPPv2I0EN9exathread6FutureE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Future</span></span></span><a class="headerlink" href="#_CPPv4I0EN9exathread6FutureE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>A task in a given pool which will eventually resolve to a result. </p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
-<dl class="cpp enum-class">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6StatusE">
-<span id="_CPPv3N9exathread6Future6StatusE"></span><span id="_CPPv2N9exathread6Future6StatusE"></span><span class="target" id="classexathread_1_1Future_1aadd8576046f9d34851af8bf4b22a5c40"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Status</span></span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6StatusE" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>The current state of a task. </p>
-<p><em>Values:</em></p>
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6Status9ScheduledE">
-<span id="_CPPv3N9exathread6Future6Status9ScheduledE"></span><span id="_CPPv2N9exathread6Future6Status9ScheduledE"></span><span class="target" id="classexathread_1_1Future_1aadd8576046f9d34851af8bf4b22a5c40a2b7dabba0077abe3732e0418b048a56b"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Scheduled</span></span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6Status9ScheduledE" title="Link to this definition"><span/></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6Status9CancelledE">
-<span id="_CPPv3N9exathread6Future6Status9CancelledE"></span><span id="_CPPv2N9exathread6Future6Status9CancelledE"></span><span class="target" id="classexathread_1_1Future_1aadd8576046f9d34851af8bf4b22a5c40aa149e85a44aeec9140e92733d9ed694e"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Cancelled</span></span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6Status9CancelledE" title="Link to this definition"><span/></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6Status9ExecutingE">
-<span id="_CPPv3N9exathread6Future6Status9ExecutingE"></span><span id="_CPPv2N9exathread6Future6Status9ExecutingE"></span><span class="target" id="classexathread_1_1Future_1aadd8576046f9d34851af8bf4b22a5c40a63c4cc5944eb60b1969f2333ead70fc9"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Executing</span></span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6Status9ExecutingE" title="Link to this definition"><span/></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6Status7YieldedE">
-<span id="_CPPv3N9exathread6Future6Status7YieldedE"></span><span id="_CPPv2N9exathread6Future6Status7YieldedE"></span><span class="target" id="classexathread_1_1Future_1aadd8576046f9d34851af8bf4b22a5c40a75240d8d8bc1132a0503b99d9eca880c"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Yielded</span></span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6Status7YieldedE" title="Link to this definition"><span/></a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6Status8CompleteE">
-<span id="_CPPv3N9exathread6Future6Status8CompleteE"></span><span id="_CPPv2N9exathread6Future6Status8CompleteE"></span><span class="target" id="classexathread_1_1Future_1aadd8576046f9d34851af8bf4b22a5c40aae94f80b3ce82062a5dd7815daa04f9d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Complete</span></span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6Status8CompleteE" title="Link to this definition"><span/></a><br /></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</div>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future5awaitEv">
 <span id="_CPPv3N9exathread6Future5awaitEv"></span><span id="_CPPv2N9exathread6Future5awaitEv"></span><span id="exathread::Future::await"></span><span class="target" id="classexathread_1_1Future_1a7e3f536eb668dca8965430954fcc7c17"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">await</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread6Future5awaitEv" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Block until the task has completed execution. </p>
+<dd><p>Block until execution had completed. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Throws<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK9exathread6Future11checkStatusEv">
-<span id="_CPPv3NK9exathread6Future11checkStatusEv"></span><span id="_CPPv2NK9exathread6Future11checkStatusEv"></span><span id="exathread::Future::checkStatusC"></span><span class="target" id="classexathread_1_1Future_1a6af9b915c803004aac95b829c010c568"></span><a class="reference internal" href="#_CPPv4N9exathread6Future6StatusE" title="exathread::Future::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">checkStatus</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK9exathread6Future11checkStatusEv" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Get the status of a task. </p>
+<span id="_CPPv3NK9exathread6Future11checkStatusEv"></span><span id="_CPPv2NK9exathread6Future11checkStatusEv"></span><span id="exathread::Future::checkStatusC"></span><span class="target" id="classexathread_1_1Future_1a6af9b915c803004aac95b829c010c568"></span><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6StatusE" title="exathread::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">checkStatus</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK9exathread6Future11checkStatusEv" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Get the status of a future. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The task’s current status </p>
+<dd class="field-odd"><p>The future’s current status </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future6cancelEv">
+<span id="_CPPv3N9exathread6Future6cancelEv"></span><span id="_CPPv2N9exathread6Future6cancelEv"></span><span id="exathread::Future::cancel"></span><span class="target" id="classexathread_1_1Future_1ad63675eab5ef1b481d6afb93e2da3f0e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cancel</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6cancelEv" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Cancel the future if it has not yet been executed. </p>
+<p>This function does nothing if the future has already begun execution, been cancelled, or completed. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future7getPoolEv">
+<span id="_CPPv3N9exathread6Future7getPoolEv"></span><span id="_CPPv2N9exathread6Future7getPoolEv"></span><span id="exathread::Future::getPool"></span><span class="target" id="classexathread_1_1Future_1ae6ca14e0b7a403716fa795b47995fec6"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE" title="exathread::Pool"><span class="n"><span class="pre">Pool</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getPool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread6Future7getPoolEv" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Get the pool that this future exists on. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The pool if it still exists, or an empty pointer otherwise </p>
 </dd>
 </dl>
 </dd></dl>
@@ -447,7 +453,7 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs">
 <span id="_CPPv3I0Dp0EN9exathread6Future4thenE1FDp6ExArgs"></span><span id="_CPPv2I0Dp0EN9exathread6Future4thenE1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs" title="exathread::Future::then::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN9exathread6FutureE" title="exathread::Future::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs" title="exathread::Future::then::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future_1a451187a50345b9d24f537f2edd739d79"></span><a class="reference internal" href="#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs" title="exathread::Future::then::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">then</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs" title="exathread::Future::then::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs" title="exathread::Future::then::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Schedule a tracked task for execution after this task. </p>
+<dd><p>Schedule a tracked task for execution after this future. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -464,8 +470,8 @@
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task has been completed or cancelled </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this task belongs no longer exists </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has been completed or cancelled </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
 </ul>
 </dd>
 </dl>
@@ -474,7 +480,7 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs">
 <span id="_CPPv3I0DpEN9exathread6Future12thenDetachedE1FDp6ExArgs"></span><span id="_CPPv2I0DpEN9exathread6Future12thenDetachedE1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future_1afbf6f4d3514025c225977ce75b7f347c"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thenDetached</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs" title="exathread::Future::thenDetached::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs" title="exathread::Future::thenDetached::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Schedule a tracked task for execution after this task with no result. </p>
+<dd><p>Schedule a tracked task for execution after this future with no result. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -490,17 +496,17 @@
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task has been completed or cancelled </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this task belongs no longer exists </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has been completed or cancelled </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs">
-<span id="_CPPv3I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchERR2Rn1FDp6ExArgs"></span><span id="_CPPv2I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchERR2Rn1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ranges</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">input_range</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rn</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN9exathread6FutureE" title="exathread::Future::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future_1a073589346b4592aad6419b0ef97ab7f0"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thenBatch</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Schedule a tracked batch job based on a container for execution after this task. </p>
+<dt class="sig sig-object cpp" id="_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs">
+<span id="_CPPv3I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchERR2Rn1FDp6ExArgs"></span><span id="_CPPv2I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchERR2Rn1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ranges</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">input_range</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rn</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN9exathread6FutureE" title="exathread::Future::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future_1a8e12761edd26c3766230bcebf6ea25fb"></span><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I0EN9exathread11MultiFutureE" title="exathread::MultiFuture"><span class="n"><span class="pre">MultiFuture</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thenBatch</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Future::thenBatch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Schedule a tracked batch job based on a container for execution after this future. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -519,8 +525,8 @@
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task has been completed or cancelled </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this task belongs no longer exists </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has been completed or cancelled </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
 </ul>
 </dd>
 </dl>
@@ -529,7 +535,7 @@
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs">
 <span id="_CPPv3I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedERR2Rn1FDp6ExArgs"></span><span id="_CPPv2I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedERR2Rn1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ranges</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">input_range</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rn</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Future_1a5b6ce6bb2b726ff0767cee67aacc22da"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thenBatchDetached</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs" title="exathread::Future::thenBatchDetached::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs" title="exathread::Future::thenBatchDetached::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs" title="exathread::Future::thenBatchDetached::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Schedule a batch job based on a container for execution after this task with no result. </p>
+<dd><p>Schedule a batch job based on a container for execution after this future with no result. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -547,8 +553,8 @@
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task has been completed or cancelled </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this task belongs no longer exists </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has been completed or cancelled </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
 </ul>
 </dd>
 </dl>
@@ -561,7 +567,7 @@
 <p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the task is cancelled during this operation </p>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The result of the task</p>
@@ -576,7 +582,7 @@
 <p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the task is cancelled during this operation </p>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The result of the task</p>
@@ -591,7 +597,7 @@
 <p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the task is cancelled during this operation </p>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If the future is cancelled during this operation </p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The result of the task</p>
@@ -625,11 +631,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="classexathread_1_1Pool.html"
+       href="classexathread_1_1MultiFuture.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Class Pool</p>
+        <p class="prev-next-title">Template Class MultiFuture</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -654,19 +660,13 @@
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-documentation">Class Documentation</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN9exathread6FutureE"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6StatusE"><code class="docutils literal notranslate"><span class="pre">Future::Status</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6Status9ScheduledE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Scheduled</span></code></a></li>
-<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6Status9CancelledE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Cancelled</span></code></a></li>
-<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6Status9ExecutingE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Executing</span></code></a></li>
-<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6Status7YieldedE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Yielded</span></code></a></li>
-<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6Status8CompleteE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Complete</span></code></a></li>
-</ul>
-</li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future5awaitEv"><code class="docutils literal notranslate"><span class="pre">Future::await()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread6Future11checkStatusEv"><code class="docutils literal notranslate"><span class="pre">Future::checkStatus()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6cancelEv"><code class="docutils literal notranslate"><span class="pre">Future::cancel()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future7getPoolEv"><code class="docutils literal notranslate"><span class="pre">Future::getPool()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::then()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenDetached()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatchDetached()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN9exathread6FuturemlENSt11enable_if_tIXntNSt9is_void_vI1UEEER1UEEv"><code class="docutils literal notranslate"><span class="pre">Future::operator*()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0ENK9exathread6FuturemlENSt11enable_if_tIXntNSt9is_void_vI1UEEERK1UEEv"><code class="docutils literal notranslate"><span class="pre">Future::operator*()</span></code></a></li>

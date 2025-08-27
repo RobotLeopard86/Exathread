@@ -54,8 +54,8 @@
         </script>
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Function exathread::getCurrentThreadPool" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html" />
-    <link rel="prev" title="Template Class Future" href="classexathread_1_1Future.html" />
+    <link rel="next" title="Enum Status" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html" />
+    <link rel="prev" title="Template Class MultiFuture" href="classexathread_1_1MultiFuture.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="latest" />
@@ -308,9 +308,6 @@
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread.html">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_std.html">Namespace std</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task.html">Template Struct Task</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -319,11 +316,32 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a></li>
 </ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1MultiFuture.html">Template Class MultiFuture</a></li>
+</ul>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html">Template Function exathread::yieldFor</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
 </ul>
 </div>
 </nav></div>
@@ -443,8 +461,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs">
-<span id="_CPPv3I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchERR2Rn1FDp6ExArgs"></span><span id="_CPPv2I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchERR2Rn1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ranges</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">input_range</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rn</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Pool_1ad3be34fcbc6d7e3bc3564026ee83f108"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">batch</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs">
+<span id="_CPPv3I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchERR2Rn1FDp6ExArgs"></span><span id="_CPPv2I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchERR2Rn1FDp6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ranges</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">input_range</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rn</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Pool_1aa03cfc11cbf9e0091497999e854dd0f7"></span><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I0EN9exathread11MultiFutureE" title="exathread::MultiFuture"><span class="n"><span class="pre">MultiFuture</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">batch</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::Rn"><span class="n"><span class="pre">Rn</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="exathread::Pool::batch::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Submit a tracked batch job based on a container into the pool. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
@@ -544,20 +562,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="classexathread_1_1Future.html"
+       href="classexathread_1_1MultiFuture.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Template Class Future</p>
+        <p class="prev-next-title">Template Class MultiFuture</p>
       </div>
     </a>
     <a class="right-next"
-       href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html"
+       href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Function exathread::getCurrentThreadPool</p>
+        <p class="prev-next-title">Enum Status</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -588,7 +606,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4PoolE"><code class="docutils literal notranslate"><span class="pre">Pool</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE6FutureI1RE1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submit()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submitDetached()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread4Pool13batchDetachedEvRR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batchDetached()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Pool14getThreadCountEv"><code class="docutils literal notranslate"><span class="pre">Pool::getThreadCount()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Pool8waitIdleEv"><code class="docutils literal notranslate"><span class="pre">Pool::waitIdle()</span></code></a></li>

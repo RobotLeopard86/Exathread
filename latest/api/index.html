@@ -308,9 +308,6 @@
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread.html">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_std.html">Namespace std</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task.html">Template Struct Task</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -320,10 +317,31 @@
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1MultiFuture.html">Template Class MultiFuture</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Pool.html">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html">Template Function exathread::yieldFor</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
 </ul>
 </div>
 </nav></div>
@@ -384,7 +402,7 @@
 <ul class="treeView" id="class-treeView">
   <li>
     <ul class="collapsibleList">
-      <li>Namespace <a href="namespace_exathread.html#namespace-exathread">exathread</a><ul><li>Template Struct <a href="structexathread_1_1Task.html#exhale-struct-structexathread-1-1Task">Task</a><ul><li class="lastChild">Struct <a href="structexathread_1_1Task_1_1promise__type.html#exhale-struct-structexathread-1-1Task-1-1promise-type">Task::promise_type</a></li></ul></li><li>Template Class <a href="classexathread_1_1Future.html#exhale-class-classexathread-1-1Future">Future</a></li><li class="lastChild">Class <a href="classexathread_1_1Pool.html#exhale-class-classexathread-1-1Pool">Pool</a></li></ul></li>
+      <li class="lastChild">Namespace <a href="namespace_exathread.html#namespace-exathread">exathread</a><ul><li>Template Struct <a href="structexathread_1_1Task.html#exhale-struct-structexathread-1-1Task">Task</a><ul><li class="lastChild">Struct <a href="structexathread_1_1Task_1_1promise__type.html#exhale-struct-structexathread-1-1Task-1-1promise-type">Task::promise_type</a></li></ul></li><li>Template Class <a href="classexathread_1_1Future.html#exhale-class-classexathread-1-1Future">Future</a></li><li>Template Class <a href="classexathread_1_1MultiFuture.html#exhale-class-classexathread-1-1MultiFuture">MultiFuture</a></li><li>Class <a href="classexathread_1_1Pool.html#exhale-class-classexathread-1-1Pool">Pool</a></li><li class="lastChild">Enum <a href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#exhale-enum-namespaceexathread-1a4013b3ff5c3b756f6d1a0a2d3091cf05">Status</a></li></ul></li>
     </ul>
   </li><!-- only tree view element -->
 </ul><!-- /treeView class-treeView --></section>
@@ -405,14 +423,10 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread.html">Namespace exathread</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="namespace_exathread.html#classes">Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="namespace_exathread.html#enums">Enums</a></li>
 <li class="toctree-l2"><a class="reference internal" href="namespace_exathread.html#functions">Functions</a></li>
 </ul>
 </li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="namespace_std.html">Namespace std</a></li>
 </ul>
 </div>
 </section>
@@ -432,7 +446,7 @@
 <li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4N9exathread4Task4TaskERR4Task"><code class="docutils literal notranslate"><span class="pre">Task::Task()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4N9exathread4TaskaSERR4Task"><code class="docutils literal notranslate"><span class="pre">Task::operator=()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4N9exathread4TaskD0Ev"><code class="docutils literal notranslate"><span class="pre">Task::~Task()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4NK9exathread4Task6isDoneEv"><code class="docutils literal notranslate"><span class="pre">Task::isDone()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4NK9exathread4Task4doneEv"><code class="docutils literal notranslate"><span class="pre">Task::done()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4N9exathread4Task6resumeEv"><code class="docutils literal notranslate"><span class="pre">Task::resume()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4N9exathread4Task7promiseEv"><code class="docutils literal notranslate"><span class="pre">Task::promise()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="structexathread_1_1Task.html#_CPPv4NK9exathread4Task7promiseEv"><code class="docutils literal notranslate"><span class="pre">Task::promise()</span></code></a></li>
@@ -483,23 +497,41 @@
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="classexathread_1_1Future.html#class-documentation">Class Documentation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6StatusE"><code class="docutils literal notranslate"><span class="pre">Future::Status</span></code></a><ul>
-<li class="toctree-l5"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6Status9ScheduledE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Scheduled</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6Status9CancelledE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Cancelled</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6Status9ExecutingE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Executing</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6Status7YieldedE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Yielded</span></code></a></li>
-<li class="toctree-l5"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6Status8CompleteE"><code class="docutils literal notranslate"><span class="pre">Future::Status::Complete</span></code></a></li>
-</ul>
-</li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future5awaitEv"><code class="docutils literal notranslate"><span class="pre">Future::await()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4NK9exathread6Future11checkStatusEv"><code class="docutils literal notranslate"><span class="pre">Future::checkStatus()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future6cancelEv"><code class="docutils literal notranslate"><span class="pre">Future::cancel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4N9exathread6Future7getPoolEv"><code class="docutils literal notranslate"><span class="pre">Future::getPool()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::then()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenDetached()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatch()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread6Future17thenBatchDetachedEvRR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatchDetached()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FuturemlENSt11enable_if_tIXntNSt9is_void_vI1UEEER1UEEv"><code class="docutils literal notranslate"><span class="pre">Future::operator*()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0ENK9exathread6FuturemlENSt11enable_if_tIXntNSt9is_void_vI1UEEERK1UEEv"><code class="docutils literal notranslate"><span class="pre">Future::operator*()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureptENSt11enable_if_tIXntNSt9is_void_vI1UEEEP1UEEv"><code class="docutils literal notranslate"><span class="pre">Future::operator-&gt;()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1MultiFuture.html">Template Class MultiFuture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="classexathread_1_1MultiFuture.html#class-documentation">Class Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I0EN9exathread11MultiFutureE"><code class="docutils literal notranslate"><span class="pre">MultiFuture</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4N9exathread11MultiFuture11MultiFutureERR6FutureI1TEz"><code class="docutils literal notranslate"><span class="pre">MultiFuture::MultiFuture()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4NK9exathread11MultiFuture4sizeEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4N9exathread11MultiFuture5awaitEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::await()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4NK9exathread11MultiFuture11checkStatusEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::checkStatus()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4N9exathread11MultiFuture6cancelEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::cancel()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4N9exathread11MultiFuture7getPoolEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::getPool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RE1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">MultiFuture::then()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I0DpEN9exathread11MultiFuture12thenDetachedEv1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">MultiFuture::thenDetached()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread11MultiFuture9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">MultiFuture::thenBatch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread11MultiFuture17thenBatchDetachedEvRR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">MultiFuture::thenBatchDetached()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1MultiFuture.html#_CPPv4N9exathread11MultiFuture7resultsEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::results()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -519,12 +551,33 @@
 <li class="toctree-l3"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE"><code class="docutils literal notranslate"><span class="pre">Pool</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4I0Dp0EN9exathread4Pool6submitE6FutureI1RE1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submit()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submitDetached()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchENSt6vectorI6FutureI1REEERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batch()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool5batchE11MultiFutureI1RERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batch()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4I_NSt6ranges11input_rangeE0DpEN9exathread4Pool13batchDetachedEvRR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batchDetached()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4Pool14getThreadCountEv"><code class="docutils literal notranslate"><span class="pre">Pool::getThreadCount()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4Pool8waitIdleEv"><code class="docutils literal notranslate"><span class="pre">Pool::waitIdle()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4Pool6cancelEv"><code class="docutils literal notranslate"><span class="pre">Pool::cancel()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4Pool6CreateENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">Pool::Create()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="enums">
+<h3>Enums<a class="headerlink" href="#enums" title="Link to this heading"><span/></a></h3>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#enum-documentation">Enum Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6StatusE"><code class="docutils literal notranslate"><span class="pre">Status</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6Status9ScheduledE"><code class="docutils literal notranslate"><span class="pre">Status::Scheduled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6Status9CancelledE"><code class="docutils literal notranslate"><span class="pre">Status::Cancelled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6Status9ExecutingE"><code class="docutils literal notranslate"><span class="pre">Status::Executing</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6Status7YieldedE"><code class="docutils literal notranslate"><span class="pre">Status::Yielded</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6Status8CompleteE"><code class="docutils literal notranslate"><span class="pre">Status::Complete</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -541,6 +594,61 @@
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html#function-documentation">Function Documentation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html#_CPPv4N9exathread20getCurrentThreadPoolEv"><code class="docutils literal notranslate"><span class="pre">getCurrentThreadPool()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html">Template Function exathread::yieldFor</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html#function-documentation">Function Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html#_CPPv4I00EN9exathread8yieldForE9AwaitableRKNSt6chrono8durationI3Rep6PeriodEE"><code class="docutils literal notranslate"><span class="pre">yieldFor()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html#function-documentation">Function Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html#_CPPv4I00EN9exathread10yieldUntilE9AwaitableRKNSt6chrono8durationI3Rep6PeriodEE"><code class="docutils literal notranslate"><span class="pre">yieldUntil()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html#function-documentation">Function Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html#_CPPv4I0EN9exathread18yieldUntilCompleteE9Awaitable6FutureIvE"><code class="docutils literal notranslate"><span class="pre">yieldUntilComplete()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html#function-documentation">Function Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html#_CPPv4I0EN9exathread18yieldUntilCompleteE9Awaitable11MultiFutureIvE"><code class="docutils literal notranslate"><span class="pre">yieldUntilComplete()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html#function-documentation">Function Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html#_CPPv4N9exathread14yieldUntilTrueENSt8functionIFbvEEE"><code class="docutils literal notranslate"><span class="pre">yieldUntilTrue()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -601,13 +709,14 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-hierarchy">Class Hierarchy</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-hierarchy">File Hierarchy</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#full-api">Full API</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#namespaces">Namespaces</a><ul class="nav section-nav flex-column">
-</ul>
-</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#namespaces">Namespaces</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#classes-and-structs">Classes and Structs</a><ul class="nav section-nav flex-column">
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#enums">Enums</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a><ul class="nav section-nav flex-column">
+</ul>
+</li>
 </ul>
 </li>
 </ul>

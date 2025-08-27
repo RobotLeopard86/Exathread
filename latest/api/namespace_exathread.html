@@ -54,7 +54,7 @@
         </script>
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Namespace std" href="namespace_std.html" />
+    <link rel="next" title="Template Struct Task" href="structexathread_1_1Task.html" />
     <link rel="prev" title="API Reference" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -308,9 +308,6 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_std.html">Namespace std</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task.html">Template Struct Task</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -320,10 +317,31 @@
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1MultiFuture.html">Template Class MultiFuture</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Pool.html">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
+</ul>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html">Template Function exathread::yieldFor</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html">Template Function exathread::yieldUntil</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html">Function exathread::yieldUntilTrue</a></li>
 </ul>
 </div>
 </nav></div>
@@ -386,7 +404,8 @@
 <p class="topic-title">Contents</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#classes" id="id2">Classes</a></p></li>
-<li><p><a class="reference internal" href="#functions" id="id3">Functions</a></p></li>
+<li><p><a class="reference internal" href="#enums" id="id3">Enums</a></p></li>
+<li><p><a class="reference internal" href="#functions" id="id4">Functions</a></p></li>
 </ul>
 </nav>
 <section id="classes">
@@ -395,13 +414,25 @@
 <li><p><a class="reference internal" href="structexathread_1_1Task.html#exhale-struct-structexathread-1-1task"><span class="std std-ref">Template Struct Task</span></a></p></li>
 <li><p><a class="reference internal" href="structexathread_1_1Task_1_1promise__type.html#exhale-struct-structexathread-1-1task-1-1promise-type"><span class="std std-ref">Struct Task::promise_type</span></a></p></li>
 <li><p><a class="reference internal" href="classexathread_1_1Future.html#exhale-class-classexathread-1-1future"><span class="std std-ref">Template Class Future</span></a></p></li>
+<li><p><a class="reference internal" href="classexathread_1_1MultiFuture.html#exhale-class-classexathread-1-1multifuture"><span class="std std-ref">Template Class MultiFuture</span></a></p></li>
 <li><p><a class="reference internal" href="classexathread_1_1Pool.html#exhale-class-classexathread-1-1pool"><span class="std std-ref">Class Pool</span></a></p></li>
+</ul>
+</section>
+<section id="enums">
+<h2>Enums<a class="headerlink" href="#enums" title="Link to this heading"><span/></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#exhale-enum-namespaceexathread-1a4013b3ff5c3b756f6d1a0a2d3091cf05"><span class="std std-ref">Enum Status</span></a></p></li>
 </ul>
 </section>
 <section id="functions">
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"><span/></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html#exhale-function-namespaceexathread-1a14e7fa538e6fb2ba7341a21c7510dfbb"><span class="std std-ref">Function exathread::getCurrentThreadPool</span></a></p></li>
+<li><p><a class="reference internal" href="function_namespaceexathread_1aa9c384b7c38862a5bd1609822ba59438.html#exhale-function-namespaceexathread-1aa9c384b7c38862a5bd1609822ba59438"><span class="std std-ref">Template Function exathread::yieldFor</span></a></p></li>
+<li><p><a class="reference internal" href="function_namespaceexathread_1ac6c71cc55670148260e22e1df44f3379.html#exhale-function-namespaceexathread-1ac6c71cc55670148260e22e1df44f3379"><span class="std std-ref">Template Function exathread::yieldUntil</span></a></p></li>
+<li><p><a class="reference internal" href="function_namespaceexathread_1ab3fb822ab49016d696100bf35a52d7c2.html#exhale-function-namespaceexathread-1ab3fb822ab49016d696100bf35a52d7c2"><span class="std std-ref">Template Function exathread::yieldUntilComplete(Future&lt;void&gt;)</span></a></p></li>
+<li><p><a class="reference internal" href="function_namespaceexathread_1a463eefd81e57abc3e26ef755b46bc23b.html#exhale-function-namespaceexathread-1a463eefd81e57abc3e26ef755b46bc23b"><span class="std std-ref">Template Function exathread::yieldUntilComplete(MultiFuture&lt;void&gt;)</span></a></p></li>
+<li><p><a class="reference internal" href="function_namespaceexathread_1a3c70b8876ecb91898e0ddc795adb715e.html#exhale-function-namespaceexathread-1a3c70b8876ecb91898e0ddc795adb715e"><span class="std std-ref">Function exathread::yieldUntilTrue</span></a></p></li>
 </ul>
 </section>
 </section>
@@ -426,11 +457,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="namespace_std.html"
+       href="structexathread_1_1Task.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Namespace std</p>
+        <p class="prev-next-title">Template Struct Task</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -454,6 +485,7 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#enums">Enums</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
 </ul>
   </nav></div>
