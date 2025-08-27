@@ -32,7 +32,7 @@
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/collapsible-lists/css/tree_view.css?v=a885cde7" />
-    <link rel="stylesheet" type="text/css" href="../_static/fonts.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/fonts.css?v=734355ca" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
@@ -54,6 +54,7 @@
         </script>
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Template Class Task" href="classexathread_1_1Task.html" />
     <link rel="prev" title="Namespace exathread" href="namespace_exathread.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -309,6 +310,9 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Class Pool</a></li>
 </ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Task.html">Template Class Task</a></li>
+</ul>
 </div>
 </nav></div>
     </div>
@@ -374,6 +378,64 @@
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4PoolE">
 <span id="_CPPv3N9exathread4PoolE"></span><span id="_CPPv2N9exathread4PoolE"></span><span id="exathread::Pool"></span><span class="target" id="classexathread_1_1Pool"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Pool</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4PoolE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>A group of threads to execute tasks. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Pool4PoolENSt6size_tE">
+<span id="_CPPv3N9exathread4Pool4PoolENSt6size_tE"></span><span id="_CPPv2N9exathread4Pool4PoolENSt6size_tE"></span><span id="exathread::Pool::Pool__std::s"></span><span class="target" id="classexathread_1_1Pool_1a3d8104f0067ba57597664f7033174781"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Pool</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">threadCount</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">thread</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">hardware_concurrency</span></span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">/</span></span><span class="w"> </span><span class="m"><span class="pre">2</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Pool4PoolENSt6size_tE" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Create a new pool with a set amount of threads. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>threadCount</strong> – The number of threads to assign to the pool (half of the hardware concurrency by default)</p>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">out_of_range</span></span></span> – If the amount of threads consumed by all pools would exceed std::thread::hardware_concurrency if this pool were created </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args">
+<span id="_CPPv3I0Dp0EN9exathread4Pool6submitE1FDp4Args"></span><span id="_CPPv2I0Dp0EN9exathread4Pool6submitE1FDp4Args"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">Args</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args" title="exathread::Pool::submit::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args" title="exathread::Pool::submit::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Pool_1ace32fd2c6685992e45fdc1732ef584fa"></span><a class="reference internal" href="classexathread_1_1Task.html#_CPPv4I0EN9exathread4TaskE" title="exathread::Task"><span class="n"><span class="pre">Task</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args" title="exathread::Pool::submit::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">submit</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args" title="exathread::Pool::submit::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args" title="exathread::Pool::submit::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Submit a task into the pool, expecting a result. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> – Function type </p></li>
+<li><p><strong>Args</strong> – Arguments to the function </p></li>
+<li><p><strong>R</strong> – Function return type</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>func</strong> – The function to invoke </p></li>
+<li><p><strong>args</strong> – Arguments to pass to the function; </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args">
+<span id="_CPPv3I0DpEN9exathread4Pool14submitDetachedE1FDp4Args"></span><span id="_CPPv2I0DpEN9exathread4Pool14submitDetachedE1FDp4Args"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">Args</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1Pool_1aa0d00877e86770a1bd992ee456bcb2b0"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">submitDetached</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args" title="exathread::Pool::submitDetached::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args" title="exathread::Pool::submitDetached::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Submit a task into the pool with no result. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> – Function type </p></li>
+<li><p><strong>Args</strong> – Arguments to the function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>func</strong> – The function to invoke </p></li>
+<li><p><strong>args</strong> – Arguments to pass to the function; </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 </dd></dl>
 
 </section>
@@ -398,6 +460,15 @@
         <p class="prev-next-title">Namespace exathread</p>
       </div>
     </a>
+    <a class="right-next"
+       href="classexathread_1_1Task.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Template Class Task</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
@@ -418,7 +489,12 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-documentation">Class Documentation</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4PoolE"><code class="docutils literal notranslate"><span class="pre">Pool</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4PoolE"><code class="docutils literal notranslate"><span class="pre">Pool</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Pool4PoolENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">Pool::Pool()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0Dp0EN9exathread4Pool6submitE4TaskI1RE1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submit()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submitDetached()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
