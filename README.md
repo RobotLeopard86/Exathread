@@ -4,24 +4,17 @@
 <img src="exathread_logo.png" width="200px" />
 
 ## About
-Exathread is a powerful C++ thread pool management library for C++20.
+Exathread is a powerful header-only C++ thread pool management library for C++20.
 
 ## Features
 * Work-stealing task queue
 * Future aggregation
 * Task continuation scheduling
-* Yielding to avoid useless blocks
+* Coroutine-based task suspension
+* Batch job parallelization
 
-## Building
-You will need:  
-* Git
-* Meson
-* Ninja
-
-Configure the build directory with `meson setup build --native-file native.ini`, then run `meson compile -C build` to build the library.  
-
-As a note, on Windows, Exathread builds using the dynamic CRT by default and will enforce this on dependencies.  
-If your app does not use the dynamic CRT, append `-Dcrt_static=true` to your configure command, or set the `crt_static` option to `true` in your `subproject` call. 
+## Usage
+CMake and Meson build definitions are provided to make it easier to use the library, however you can also just copy `exathread.hpp` to wherever needed
 
 ## Documentation
 Documentation is built and deployed automatically to https://robotleopard86.github.io/Exathread.  

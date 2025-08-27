@@ -1,1 +1,0 @@
-option('crt_static', type: 'boolean', value: true, description: 'Use the static CRT on Windows')
