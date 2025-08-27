@@ -42,16 +42,173 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 
 #pragma once
 
+#include <coroutine>
 #include <cstddef>
+#include <exception>
+#include <memory>
+#include <ranges>
 #include <thread>
+#include <type_traits>
+#include <vector>
+#include <utility>
 
 ///@brief The root namespace for all Exathread functionality
 namespace exathread {
+	class Pool;
+
+	/**
+	 * @brief Task coroutine management class
+	 *
+	 * @warning Do not interface with this class directly; it is documented but is not meant for general use
+	 */
+	template<typename T = void>
+	struct Task {
+		/**
+		 * @brief Low-level coroutine behavior representation
+		 */
+		struct promise_type {
+			std::optional<T> val;		 ///<The stored result value
+			std::exception_ptr exception;///<The stored result exception (if one is thrown)
+
+			/**
+			 * @brief Set the return value
+			 *
+			 * @param value The return value to store
+			 */
+			template<typename U = T>
+			std::enable_if_t<!std::is_void_v<U>, void> return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
+				val = std::move(value);
+			}
+
+			/**
+			 * @brief For coroutines that return nothing
+			 */
+			template<typename U = T>
+			std::enable_if_t<std::is_void_v<U>, void> return_void() noexcept {}
+
+			/**
+			 * @brief Handle exceptions not handled by the coroutine
+			 */
+			void unhandled_exception() noexcept {
+				exception = std::current_exception();
+			}
+
+			/**
+			 * @brief Make the coroutine start suspended
+			 */
+			std::suspend_always initial_suspend() noexcept {
+				return {};
+			}
+
+			/**
+			 * @brief Make the coroutine end suspended
+			 */
+			std::suspend_always final_suspend() noexcept {
+				return {};
+			}
+
+			/**
+			 * @brief Construct the return object for the coroutine function
+			 *
+			 * @return A Task that represents the coroutine
+			 */
+			Task get_return_object() noexcept {
+				return Task {std::coroutine_handle<promise_type>::from_promise(this)};
+			}
+		};
+
+		///@cond
+		using handle_type = std::coroutine_handle<promise_type>;
+		///@endcond
+
+		//I don't like the switch to private and back but we need to have h for later
+	  private:
+		handle_type h;
+
+	  public:
+		/**
+		 * @brief Create a blank task
+		 */
+		Task() = default;
+
+		/**
+		 * @brief Create a task managing a coroutine
+		 */
+		explicit Task(handle_type h) : h(h) {}
+
+		/**
+		 * @brief Move construction
+		 */
+		Task(Task&& other) : h(std::exchange(other.h, {})) {}
+
+		/**
+		 * @brief Move assignment
+		 */
+		Task& operator=(Task&& other) noexcept {
+			if(this != other) {
+				//Destroy coroutine state before swap
+				if(h) h.destroy();
+				h = std::exchange(other.h, {});
+			}
+			return *this;
+		}
+
+		~Task() {
+			if(h) h.destroy();
+		}
+
+		/**
+		 * @brief Check if a task has completed execution
+		 *
+		 * @return Completion state
+		 */
+		bool isDone() const noexcept {
+			return !h || h.done();
+		}
+
+		/**
+		 * @brief Resume execution of a task
+		 *
+		 * @throws std::logic_error If the task is done
+		 */
+		void resume() {
+			if(isDone()) throw std::logic_error("Cannot resume a done task!");
+			h.resume();
+		}
+
+		/**
+		 * @brief Access the underlying promise
+		 *
+		 * @return The promise data
+		 */
+		promise_type& promise() noexcept {
+			return h.promise();
+		}
+
+		/**
+		 * @brief Access the underlying promise
+		 *
+		 * @return The promise data
+		 */
+		const promise_type& promise() const noexcept {
+			return h.promise();
+		}
+
+		/**
+		 * @brief Access the handle to the managed coroutine
+		 *
+		 * @return The coroutine handle
+		 */
+		handle_type handle() noexcept {
+			return h;
+		}
+	};
+
 	/**
 	 * @brief A task in a given pool which will eventually resolve to a result
 	 */
 	template<typename T = void>
-	class Task {
+	class Future {
 	  public:
 		///@cond
 		using value_type = T;
@@ -63,6 +220,7 @@ namespace exathread {
 		 */
 		enum class Status {
 			Scheduled,
+			Cancelled,
 			Executing,
 			Yielded,
 			Complete
@@ -80,7 +238,75 @@ namespace exathread {
 		 */
 		Status checkStatus() const noexcept;
 
-		//Result accessors
+		/**
+		 * @brief Schedule a tracked task for execution after this task
+		 *
+		 * @tparam F Function type
+		 * @tparam ExArgs Arguments to the function
+		 * @tparam R Function return type
+		 *
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the task has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 */
+		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, ExArgs&&...>>
+			requires std::invocable<F&&, T&&, ExArgs&&...>
+		Future<R> then(F func, ExArgs... exargs);
+
+		/**
+		 * @brief Schedule a tracked task for execution after this task with no result
+		 *
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra arguments to the function
+		 *
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the task has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 */
+		template<typename F, typename... ExArgs>
+			requires std::invocable<F&&, T&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T&&, ExArgs&&...>>
+		void thenDetached(F func, ExArgs... exargs);
+
+		/**
+		 * @brief Schedule a tracked batch job based on a container for execution after this task
+		 *
+		 * @tparam Rn Input range type
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam R Function return type
+		 *
+		 * @param src The source range to iterate over
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the task has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 */
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
+			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...>
+		std::vector<Future<R>> thenBatch(Rn&& src, F func, ExArgs... exargs);
+
+		/**
+		 * @brief Schedule a batch job based on a container for execution after this task with no result
+		 *
+		 * @tparam Rn Input range type
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra rguments to the function
+		 *
+		 * @param src The source range to iterate over
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @throws std::logic_error If the task has been completed or cancelled
+		 * @throws std::bad_weak_ptr If the pool to which this task belongs no longer exists
+		 */
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
+			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
+		void thenBatchDetached(Rn&& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Obtain the task result, blocking if not complete
@@ -88,6 +314,8 @@ namespace exathread {
 		 * This function does not exist in the @c void specialization of this type
 		 *
 		 * @return The result of the task
+		 *
+		 * @throws std::runtime_error If the task is cancelled during this operation
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U&> operator*();
@@ -98,6 +326,8 @@ namespace exathread {
 		 * This function does not exist in the @c void specialization of this type
 		 *
 		 * @return The result of the task
+		 *
+		 * @throws std::runtime_error If the task is cancelled during this operation
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, const U&> operator*() const;
@@ -108,23 +338,28 @@ namespace exathread {
 		 * This function does not exist in the @c void specialization of this type
 		 *
 		 * @return The result of the task
+		 *
+		 * @throws std::runtime_error If the task is cancelled during this operation
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U*> operator->();
 
 		//Move only
 		///@cond
-		Task(const Task&) = delete;
-		Task& operator=(const Task&) = delete;
-		Task(Task&&) = default;
-		Task& operator=(Task&&) = default;
+		Future(const Future&) = delete;
+		Future& operator=(const Future&) = delete;
+		Future(Future&&) = default;
+		Future& operator=(Future&&) = default;
 		///@endcond
+	  private:
+		std::weak_ptr<Pool> pool;
+		Task<T> task;
 	};
 
 	/**
 	 * @brief A group of threads to execute tasks
 	 */
-	class Pool {
+	class Pool : public std::enable_shared_from_this<Pool> {
 	  public:
 		/**
 		 * @brief Create a new pool with a set amount of threads
@@ -133,7 +368,9 @@ namespace exathread {
 		 *
 		 * @throws std::out_of_range If the amount of threads consumed by all pools would exceed std::thread::hardware_concurrency if this pool were created
 		 */
-		explicit Pool(std::size_t threadCount = std::thread::hardware_concurrency() / 2);
+		static std::shared_ptr<Pool> Create(std::size_t threadCount = std::thread::hardware_concurrency() / 2) {
+			return std::shared_ptr<Pool>(new Pool(threadCount));
+		}
 
 		//Move only
 		///@cond
@@ -144,18 +381,18 @@ namespace exathread {
 		///@endcond
 
 		/**
-		 * @brief Submit a task into the pool, expecting a result
+		 * @brief Submit a tracked task into the pool
 		 *
 		 * @tparam F Function type
 		 * @tparam Args Arguments to the function
 		 * @tparam R Function return type
 		 *
 		 * @param func The function to invoke
-		 * @param args Arguments to pass to the function;
+		 * @param args Arguments to pass to the function
 		 */
 		template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
 			requires std::invocable<F&&, Args&&...>
-		Task<R> submit(F func, Args... args);
+		Future<R> submit(F func, Args... args);
 
 		/**
 		 * @brief Submit a task into the pool with no result
@@ -164,12 +401,72 @@ namespace exathread {
 		 * @tparam Args Arguments to the function
 		 *
 		 * @param func The function to invoke
-		 * @param args Arguments to pass to the function;
+		 * @param args Arguments to pass to the function
 		 */
 		template<typename F, typename... Args>
 			requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
 		void submitDetached(F func, Args... args);
+
+		/**
+		 * @brief Submit a tracked batch job based on a container into the pool
+		 *
+		 * @tparam Rn Input range type
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam R Function return type
+		 *
+		 * @param src The source range to iterate over
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 */
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, Rn&&, ExArgs&&...>>
+			requires std::invocable<F&&, Rn&&, ExArgs&&...>
+		std::vector<Future<R>> batch(Rn&& src, F func, ExArgs... exargs);
+
+		/**
+		 * @brief Submit a batch job based on a container into the pool with no result
+		 *
+		 * @tparam Rn Input range type
+		 * @tparam F Function type
+		 * @tparam ExArgs Extra rguments to the function
+		 *
+		 * @param src The source range to iterate over
+		 * @param func The function to invoke
+		 * @param exargs Extra arguments to pass to the function
+		 */
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
+			requires std::invocable<F&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, Rn&&, ExArgs&&...>>
+		void batchDetached(Rn&& src, F func, ExArgs... exargs);
+
+		/**
+		 * @brief Get the number of worker threads managed the pool
+		 *
+		 * @returns Pool thread count
+		 */
+		std::size_t getThreadCount();
+
+		/**
+		 * @brief Wait until there are no more tasks in the queue (tasks submitted during this call will continue to block it)
+		 */
+		void waitIdle();
+
+		/**
+		 * @brief Cancel all currently scheduled tasks
+		 */
+		void cancel();
+
+	  private:
+		Pool(std::size_t threadCount);
+
+		static std::size_t totalThreads;
 	};
+
+	/**
+	 * @brief Get the pool the current thread belongs to (or nothing if this isn't a worker thread)
+	 *
+	 * @returns An optional containing a pool pointer if the current thread is a worker, or nothing otherwise
+	 */
+	std::optional<std::shared_ptr<Pool>> getCurrentThreadPool();
 }
 
 //The implementation goes down here
