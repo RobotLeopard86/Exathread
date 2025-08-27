@@ -53,7 +53,10 @@ namespace exathread {
 	template<typename T = void>
 	class Task {
 	  public:
+		///@cond
 		using value_type = T;
+		struct promise_type;
+		///@endcond
 
 		/**
 		 * @brief The current state of a task
