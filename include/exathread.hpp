@@ -51,6 +51,10 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #include <type_traits>
 #include <vector>
 #include <utility>
+#include <optional>
+#include <functional>
+#include <stdexcept>
+#include <chrono>
 
 ///@brief The root namespace for all Exathread functionality
 namespace exathread {
@@ -69,8 +73,8 @@ namespace exathread {
 		 * @warning Do not interface with this struct directly; it is documented but is not meant for general use
 		 */
 		struct promise_type {
-			std::optional<T> val;		 ///<The stored result value
-			std::exception_ptr exception;///<The stored result exception (if one is thrown)
+			std::enable_if_t<!std::is_void_v<T>, std::optional<T>> val;///<The stored result value
+			std::exception_ptr exception;							   ///<The stored result exception (if one is thrown)
 
 			/**
 			 * @brief Set the return value
@@ -115,7 +119,7 @@ namespace exathread {
 			 * @return A Task that represents the coroutine
 			 */
 			Task get_return_object() noexcept {
-				return Task {std::coroutine_handle<promise_type>::from_promise(this)};
+				return Task {std::coroutine_handle<promise_type>::from_promise(*this)};
 			}
 		};
 
@@ -138,6 +142,11 @@ namespace exathread {
 		 */
 		explicit Task(handle_type h) : h(h) {}
 
+		///@cond
+		Task(const Task&) = delete;
+		Task& operator=(const Task&) = delete;
+		///@endcond
+
 		/**
 		 * @brief Move construction
 		 */
@@ -147,7 +156,7 @@ namespace exathread {
 		 * @brief Move assignment
 		 */
 		Task& operator=(Task&& other) noexcept {
-			if(this != other) {
+			if(this != &other) {
 				//Destroy coroutine state before swap
 				if(h) h.destroy();
 				h = std::exchange(other.h, {});
@@ -155,7 +164,7 @@ namespace exathread {
 			return *this;
 		}
 
-		~Task() {
+		~Task() noexcept {
 			if(h) h.destroy();
 		}
 
@@ -216,11 +225,12 @@ namespace exathread {
 	 * @brief The current state of a future
 	 */
 	enum class Status {
-		Scheduled,
-		Cancelled,
-		Executing,
-		Yielded,
-		Complete
+		Scheduled,///<The task has been scheduled for execution but has not begun
+		Cancelled,///<Execution of the task was cancelled
+		Executing,///<The task is currently executing
+		Yielded,  ///<The task has yielded temporarily
+		Failed,	  ///<The task completed with an exception
+		Complete  ///<The task completed successfully
 	};
 
 	/**
@@ -260,7 +270,7 @@ namespace exathread {
 		 *
 		 * @returns The pool if it still exists, or an empty pointer otherwise
 		 */
-		std::shared_ptr<Pool> getPool() noexcept;
+		std::weak_ptr<Pool> getPool() noexcept;
 
 		/**
 		 * @brief Schedule a tracked task for execution after this future
@@ -277,7 +287,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, ExArgs&&...>>
 			requires std::invocable<F&&, T&&, ExArgs&&...>
-		Future<R> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after this future with no result
@@ -312,7 +322,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
 			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...>
-		MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after this future with no result
@@ -340,6 +350,7 @@ namespace exathread {
 		 * @return The result of the task
 		 *
 		 * @throws std::runtime_error If the future is cancelled during this operation
+		 * @throws The exception thrown by the task if failed
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U&> operator*();
@@ -352,6 +363,7 @@ namespace exathread {
 		 * @return The result of the task
 		 *
 		 * @throws std::runtime_error If the future is cancelled during this operation
+		 * @throws The exception thrown by the task if failed
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, const U&> operator*() const;
@@ -364,6 +376,7 @@ namespace exathread {
 		 * @return The result of the task
 		 *
 		 * @throws std::runtime_error If the future is cancelled during this operation
+		 * @throws The exception thrown by the task if failed
 		 */
 		template<typename U = T>
 		std::enable_if_t<!std::is_void_v<U>, U*> operator->();
@@ -410,7 +423,7 @@ namespace exathread {
 		/**
 		 * @brief Get the overall status of the collection
 		 *
-		 * @details The status progresses as follows: starting at Scheduled, once a future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Cancelled if a future is cancelled. The Yielding status is never returned.
+		 * @details The status progresses as follows: starting at Scheduled, once a future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Cancelled if a future is cancelled and likewise for Failed. The Yielding status is never returned.
 		 *
 		 * @returns The overall status
 		 */
@@ -428,7 +441,7 @@ namespace exathread {
 		 *
 		 * @returns The pool if it still exists, or an empty pointer otherwise
 		 */
-		std::shared_ptr<Pool> getPool() noexcept;
+		std::weak_ptr<Pool> getPool() noexcept;
 
 		/**
 		 * @brief Schedule a tracked task for execution after these futures
@@ -445,7 +458,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
 			requires std::invocable<F&&, std::vector<T>&&, ExArgs&&...>
-		Future<R> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after these futures with no result
@@ -480,7 +493,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>>
 			requires std::invocable<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>
-		MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after these futures with no result
@@ -506,6 +519,7 @@ namespace exathread {
 		 * @returns A list of results corresponding to the order of futures as placed in the constructor
 		 *
 		 * @throws std::runtime_error If any future is cancelled during this operation
+		 * @throws std::runtime_error If any of the futures failed
 		 */
 		std::vector<T> results();
 
@@ -549,7 +563,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
 			requires std::invocable<F&&, Args&&...>
-		Future<R> submit(F func, Args... args);
+		[[nodiscard]] Future<R> submit(F func, Args... args);
 
 		/**
 		 * @brief Submit a task into the pool with no result
@@ -578,7 +592,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, Rn&&, ExArgs&&...>>
 			requires std::invocable<F&&, Rn&&, ExArgs&&...>
-		MultiFuture<R> batch(Rn&& src, F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> batch(Rn&& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Submit a batch job based on a container into the pool with no result
@@ -639,7 +653,7 @@ namespace exathread {
 	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
 	 */
 	template<typename Rep, typename Period>
-	Awaitable yieldFor(const std::chrono::duration<Rep, Period>& duration);
+	[[nodiscard]] Awaitable yieldFor(const std::chrono::duration<Rep, Period>& duration);
 
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until a certain point in time
@@ -653,7 +667,7 @@ namespace exathread {
 	 * @throws std::logic_error If the specified time point is in the past
 	 */
 	template<typename Rep, typename Period>
-	Awaitable yieldUntil(const std::chrono::duration<Rep, Period>& time);
+	[[nodiscard]] Awaitable yieldUntil(const std::chrono::duration<Rep, Period>& time);
 
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until a certain condition is met
@@ -664,7 +678,7 @@ namespace exathread {
 	 *
 	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
 	 */
-	Awaitable yieldUntilTrue(std::function<bool()> predicate);
+	[[nodiscard]] Awaitable yieldUntilTrue(std::function<bool()> predicate);
 
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until a future resolves
@@ -679,7 +693,7 @@ namespace exathread {
 	 * @throws std::logic_error If the specified future has already been completed or cancelled
 	 */
 	template<typename T>
-	Awaitable yieldUntilComplete(Future<void> future);
+	[[nodiscard]] Awaitable yieldUntilComplete(Future<T> future);
 
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until futures resolve
@@ -694,7 +708,7 @@ namespace exathread {
 	 * @throws std::logic_error If the specified futures have already been completed or cancelled
 	 */
 	template<typename T>
-	Awaitable yieldUntilComplete(MultiFuture<void> futures);
+	[[nodiscard]] Awaitable yieldUntilComplete(MultiFuture<T> futures);
 }
 
 //The implementation goes down here
