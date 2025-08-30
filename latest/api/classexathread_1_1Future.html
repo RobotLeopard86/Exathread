@@ -314,9 +314,6 @@
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread__details.html">Namespace exathread::details</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1FutureWrapper.html">Struct FutureWrapper</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1TaskGenerator.html">Struct TaskGenerator</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -458,17 +455,6 @@
 <span id="_CPPv3N9exathread6Future6cancelEv"></span><span id="_CPPv2N9exathread6Future6cancelEv"></span><span id="exathread::Future::cancel"></span><span class="target" id="classexathread_1_1Future_1ad63675eab5ef1b481d6afb93e2da3f0e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cancel</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread6Future6cancelEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Cancel the future if it has not yet been executed. </p>
 <p>This function does nothing if the future has already begun execution, been cancelled, or completed. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future7getPoolEv">
-<span id="_CPPv3N9exathread6Future7getPoolEv"></span><span id="_CPPv2N9exathread6Future7getPoolEv"></span><span id="exathread::Future::getPool"></span><span class="target" id="classexathread_1_1Future_1a7e6749e5666e82b41bedb78308696dc4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">weak_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE" title="exathread::Pool"><span class="n"><span class="pre">Pool</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getPool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread6Future7getPoolEv" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Get the pool that this future exists on. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The pool if it still exists, or an empty pointer otherwise </p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="cpp function">
@@ -636,14 +622,6 @@
 </dd></dl>
 
 </div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-friends">Friends</p>
-<dl>
-<dt class="sig sig-object cpp">
-<em class="property"><span class="pre">friend</span> <span class="pre">struct</span></em> <span class="pre">details::Manipulator</span></dt>
-</dl>
-
-</div>
 </dd></dl>
 
 </section>
@@ -701,7 +679,6 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future5awaitEv"><code class="docutils literal notranslate"><span class="pre">Future::await()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread6Future11checkStatusEv"><code class="docutils literal notranslate"><span class="pre">Future::checkStatus()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future6cancelEv"><code class="docutils literal notranslate"><span class="pre">Future::cancel()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future7getPoolEv"><code class="docutils literal notranslate"><span class="pre">Future::getPool()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RE1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::then()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN9exathread6Future12thenDetachedEv1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenDetached()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread6Future9thenBatchE11MultiFutureI1RERR2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenBatch()</span></code></a></li>

@@ -314,9 +314,6 @@
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread__details.html">Namespace exathread::details</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1FutureWrapper.html">Struct FutureWrapper</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1TaskGenerator.html">Struct TaskGenerator</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -470,8 +467,8 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_type13final_suspendEv">
-<span id="_CPPv3N9exathread4Task12promise_type13final_suspendEv"></span><span id="_CPPv2N9exathread4Task12promise_type13final_suspendEv"></span><span id="exathread::Task::promise_type::final_suspend"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1ad7da84b4e370e7ef7083ba7e7e21ea13"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">suspend_always</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">final_suspend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type13final_suspendEv" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Make the coroutine end suspended. </p>
+<span id="_CPPv3N9exathread4Task12promise_type13final_suspendEv"></span><span id="_CPPv2N9exathread4Task12promise_type13final_suspendEv"></span><span id="exathread::Task::promise_type::final_suspend"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1ad7da84b4e370e7ef7083ba7e7e21ea13"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">suspend_always</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">final_suspend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type13final_suspendEv" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>Make the coroutine end suspended and schedule continuations. </p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -498,6 +495,24 @@
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_type9exceptionE">
 <span id="_CPPv3N9exathread4Task12promise_type9exceptionE"></span><span id="_CPPv2N9exathread4Task12promise_type9exceptionE"></span><span id="exathread::Task::promise_type::exception__std::exception_ptr"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1a67e1b9d8ad6866f09bc4a562077fc2e0"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">exception_ptr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">exception</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type9exceptionE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>The stored result exception (if one is thrown) </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_type6statusE">
+<span id="_CPPv3N9exathread4Task12promise_type6statusE"></span><span id="_CPPv2N9exathread4Task12promise_type6statusE"></span><span id="exathread::Task::promise_type::status__Status"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1af88ada9f73ea27393b49d85e95d5eac9"></span><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html#_CPPv4N9exathread6StatusE" title="exathread::Status"><span class="n"><span class="pre">Status</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">status</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type6statusE" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>The status of the task. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_type4poolE">
+<span id="_CPPv3N9exathread4Task12promise_type4poolE"></span><span id="_CPPv2N9exathread4Task12promise_type4poolE"></span><span id="exathread::Task::promise_type::pool__std::weak_ptr:Pool:"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1a0915d5da1abf951ad42866aadca028f0"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">weak_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE" title="exathread::Pool"><span class="n"><span class="pre">Pool</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pool</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type4poolE" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>The pool of execution. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task12promise_type9generatorE">
+<span id="_CPPv3N9exathread4Task12promise_type9generatorE"></span><span id="_CPPv2N9exathread4Task12promise_type9generatorE"></span><span id="exathread::Task::promise_type::generator__details::TaskGeneratorP"></span><span class="target" id="structexathread_1_1Task_1_1promise__type_1a862778e1dbb29915d7e22a45ec84436d"></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="structexathread_1_1details_1_1TaskGenerator.html#_CPPv4N9exathread7details13TaskGeneratorE" title="exathread::details::TaskGenerator"><span class="n"><span class="pre">TaskGenerator</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">generator</span></span></span><a class="headerlink" href="#_CPPv4N9exathread4Task12promise_type9generatorE" title="Link to this definition"><span/></a><br /></dt>
+<dd><p>The generator for the task. </p>
 </dd></dl>
 
 </div>
@@ -564,6 +579,9 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task12promise_type17get_return_objectEv"><code class="docutils literal notranslate"><span class="pre">promise_type::get_return_object()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task12promise_type3valE"><code class="docutils literal notranslate"><span class="pre">promise_type::val</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task12promise_type9exceptionE"><code class="docutils literal notranslate"><span class="pre">promise_type::exception</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task12promise_type6statusE"><code class="docutils literal notranslate"><span class="pre">promise_type::status</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task12promise_type4poolE"><code class="docutils literal notranslate"><span class="pre">promise_type::pool</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task12promise_type9generatorE"><code class="docutils literal notranslate"><span class="pre">promise_type::generator</span></code></a></li>
 </ul>
 </li>
 </ul>
