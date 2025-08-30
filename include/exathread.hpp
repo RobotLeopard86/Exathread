@@ -60,17 +60,40 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 namespace exathread {
 	class Pool;
 
+	/**
+	 * @brief The current state of a future
+	 */
+	enum class Status {
+		Scheduled,///<The task has been scheduled for execution but has not begun
+		Cancelled,///<Execution of the task was cancelled
+		Executing,///<The task is currently executing
+		Yielded,  ///<The task has yielded temporarily
+		Failed,	  ///<The task completed with an exception
+		Complete  ///<The task completed successfully
+	};
+
 	///@cond
 	namespace details {
-		struct Manipulator;
 		struct TaskGenerator;
 		struct YieldOp;
 		struct ThreadData;
 
 		class ITask {
 		  public:
-			virtual bool done() const noexcept = 0;
-			virtual void resume() = 0;
+			virtual bool done() const noexcept {
+				return false;
+			}
+			virtual void resume() {}
+			virtual std::coroutine_handle<> handle() noexcept {
+				return {};
+			}
+			virtual std::shared_ptr<Pool> getPool() noexcept {
+				return {};
+			}
+			virtual Status status() const noexcept {
+				return Status::Scheduled;
+			}
+			virtual void status(Status) noexcept {}
 		};
 	}
 	///@endcond
@@ -91,6 +114,9 @@ namespace exathread {
 		struct promise_type {
 			std::enable_if_t<!std::is_void_v<T>, std::optional<T>> val;///<The stored result value
 			std::exception_ptr exception;							   ///<The stored result exception (if one is thrown)
+			Status status;											   ///<The status of the task
+			std::weak_ptr<Pool> pool;								   ///<The pool of execution
+			details::TaskGenerator* generator;						   ///<The generator for the task
 
 			/**
 			 * @brief Set the return value
@@ -119,13 +145,19 @@ namespace exathread {
 			 * @brief Make the coroutine start suspended
 			 */
 			std::suspend_always initial_suspend() noexcept {
+				status = Status::Scheduled;
 				return {};
 			}
 
 			/**
-			 * @brief Make the coroutine end suspended
+			 * @brief Make the coroutine end suspended and schedule continuations
 			 */
-			std::suspend_always final_suspend() noexcept;
+			std::suspend_always final_suspend() noexcept {
+				status = exception ? Status::Failed : Status::Complete;
+				if(!exception) {
+				}
+				return {};
+			}
 
 			/**
 			 * @brief Construct the return object for the coroutine function
@@ -224,8 +256,33 @@ namespace exathread {
 		 *
 		 * @return The coroutine handle
 		 */
-		handle_type handle() noexcept {
+		handle_type handle() noexcept override {
 			return h;
+		}
+
+		/**
+		 * @brief Get the pool that this task exists on
+		 *
+		 * @returns The pool if it still exists, or an empty pointer otherwise
+		 */
+		std::shared_ptr<Pool> getPool() noexcept override {
+			return promise().pool.expired() ? std::shared_ptr<Pool>() : promise().pool.lock();
+		}
+
+		/**
+		 * @brief Get the status of this task
+		 *
+		 * @returns The task status
+		 */
+		Status status() const noexcept override {
+			return promise().status;
+		}
+
+		/**
+		 * @brief Set the status of this task
+		 */
+		void status(Status s) noexcept override {
+			promise().status = s;
 		}
 	};
 
@@ -234,18 +291,6 @@ namespace exathread {
 
 	template<typename T = void>
 	class MultiFuture;
-
-	/**
-	 * @brief The current state of a future
-	 */
-	enum class Status {
-		Scheduled,///<The task has been scheduled for execution but has not begun
-		Cancelled,///<Execution of the task was cancelled
-		Executing,///<The task is currently executing
-		Yielded,  ///<The task has yielded temporarily
-		Failed,	  ///<The task completed with an exception
-		Complete  ///<The task completed successfully
-	};
 
 	/**
 	 * @brief A task in a given pool which will eventually resolve to a result
@@ -270,7 +315,7 @@ namespace exathread {
 		 * @returns The future's current status
 		 */
 		Status checkStatus() const noexcept {
-			return status;
+			return task->promise().status;
 		};
 
 		/**
@@ -279,15 +324,6 @@ namespace exathread {
 		 * This function does nothing if the future has already begun execution, been cancelled, or completed.
 		 */
 		void cancel() noexcept;
-
-		/**
-		 * @brief Get the pool that this future exists on
-		 *
-		 * @returns The pool if it still exists, or an empty pointer otherwise
-		 */
-		std::weak_ptr<Pool> getPool() noexcept {
-			return pool.expired() ? std::weak_ptr<Pool>() : pool;
-		}
 
 		/**
 		 * @brief Schedule a tracked task for execution after this future
@@ -406,13 +442,10 @@ namespace exathread {
 		Future& operator=(Future&&) = default;
 		///@endcond
 	  private:
-		std::weak_ptr<Pool> pool;
-		Task<T> task;
-		Status status;
+		Task<T>* task;
 
 		Future() {}
 		friend class Pool;
-		friend struct details::Manipulator;
 	};
 
 	/**
@@ -737,47 +770,44 @@ namespace exathread {
 
 namespace exathread {
 	namespace details {
-		struct FutureWrapper {
-			std::function<void()> await;
-			std::function<void()> cancel;
-			std::function<Status()> statusGet;
-			std::function<void(Status)> statusSet;
-			std::function<ITask&()> taskGet;
+		struct TaskGenerator {
+		  public:
+			TaskGenerator* next = nullptr;
 
 			template<typename T>
-			FutureWrapper(std::shared_ptr<Future<T>> f) {
-				await = [f]() {
-					f->await();
-				};
-				cancel = [f]() {
-					f->cancel();
-				};
-				statusGet = [f]() {
-					return f->status;
-				};
-				statusSet = [f](Status s) {
-					return f->status = s;
-				};
-				taskGet = [f]() {
-					return static_cast<ITask>(f->task);
+			TaskGenerator(std::function<Task<T>()> genfunc, std::weak_ptr<Pool> p) {
+				generator = [this, genfunc, p]() {
+					Task<T> task = genfunc();
+					task.promise().generator = this;
+					task.promise().pool = p;
+					return static_cast<ITask>(task);
 				};
 			}
-		};
 
-		struct TaskGenerator {
+			ITask generate() {
+				return generator();
+			}
+
+		  private:
 			std::function<ITask()> generator;
-			FutureWrapper fw;
-			TaskGenerator* next = nullptr;
 		};
 
 		struct YieldOp {
 			std::function<bool()> predicate;
-			FutureWrapper fw;
+			ITask* task;
 			bool await_ready() {
-				return false;
+				return predicate();
 			}
-			void await_suspend(std::coroutine_handle<>) {}
-			void await_resume() {}
+			void await_suspend(std::coroutine_handle<> h) {
+				//TODO: Obtain the task somehow
+
+				//Mark the task as yielded
+				task->status(Status::Yielded);
+			}
+			void await_resume() {
+				//Mark the task as executing again
+				task->status(Status::Executing);
+			}
 		};
 
 		struct ThreadData {
@@ -787,18 +817,11 @@ namespace exathread {
 		};
 	}
 
-	template<typename T>
-	std::suspend_always Task<T>::promise_type::final_suspend() noexcept {
-		if(!exception) {
-		}
-		return {};
-	}
-
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
 		while(!stop.stop_requested()) {
 			//First check the yield list
 			for(auto yptr : data.yields) {
-				if(yptr->predicate()) yptr->fw.taskGet().resume();
+				if(yptr->predicate()) yptr->task->resume();
 			}
 		}
 	}
