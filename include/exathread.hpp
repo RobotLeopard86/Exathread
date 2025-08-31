@@ -42,6 +42,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 
 #pragma once
 
+#include <any>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
@@ -74,108 +75,23 @@ namespace exathread {
 
 	///@cond
 	namespace details {
+		struct Promise;
+		struct VoidPromise;
+		struct ValuePromise;
 		struct TaskGenerator;
 		struct YieldOp;
 		struct ThreadData;
-
-		class ITask {
-		  public:
-			virtual bool done() const noexcept {
-				return false;
-			}
-			virtual void resume() {}
-			virtual std::coroutine_handle<> handle() noexcept {
-				return {};
-			}
-			virtual std::shared_ptr<Pool> getPool() noexcept {
-				return {};
-			}
-			virtual Status status() const noexcept {
-				return Status::Scheduled;
-			}
-			virtual void status(Status) noexcept {}
-		};
 	}
 	///@endcond
 
 	/**
-	 * @brief Task coroutine management class
+	 * @brief Base coroutine handle management class
 	 *
 	 * @warning Do not interface with this class directly; it is documented but is not meant for general use
 	 */
-	template<typename T = void>
-	class Task : public details::ITask {
-	  public:
-		/**
-		 * @brief Low-level coroutine behavior representation
-		 *
-		 * @warning Do not interface with this struct directly; it is documented but is not meant for general use
-		 */
-		struct promise_type {
-			std::enable_if_t<!std::is_void_v<T>, std::optional<T>> val;///<The stored result value
-			std::exception_ptr exception;							   ///<The stored result exception (if one is thrown)
-			Status status;											   ///<The status of the task
-			std::weak_ptr<Pool> pool;								   ///<The pool of execution
-			details::TaskGenerator* generator;						   ///<The generator for the task
-
-			/**
-			 * @brief Set the return value
-			 *
-			 * @param value The return value to store
-			 */
-			template<typename U = T>
-			std::enable_if_t<!std::is_void_v<U>, void> return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
-				val = std::move(value);
-			}
-
-			/**
-			 * @brief For coroutines that return nothing
-			 */
-			template<typename U = T>
-			std::enable_if_t<std::is_void_v<U>, void> return_void() noexcept {}
-
-			/**
-			 * @brief Handle exceptions not handled by the coroutine
-			 */
-			void unhandled_exception() noexcept {
-				exception = std::current_exception();
-			}
-
-			/**
-			 * @brief Make the coroutine start suspended
-			 */
-			std::suspend_always initial_suspend() noexcept {
-				status = Status::Scheduled;
-				return {};
-			}
-
-			/**
-			 * @brief Make the coroutine end suspended and schedule continuations
-			 */
-			std::suspend_always final_suspend() noexcept {
-				status = exception ? Status::Failed : Status::Complete;
-				if(!exception) {
-				}
-				return {};
-			}
-
-			/**
-			 * @brief Construct the return object for the coroutine function
-			 *
-			 * @return A Task that represents the coroutine
-			 */
-			Task get_return_object() noexcept {
-				return Task {std::coroutine_handle<promise_type>::from_promise(*this)};
-			}
-		};
-
-		///@cond
-		using handle_type = std::coroutine_handle<promise_type>;
-		///@endcond
-
-		//I don't like the switch to private and back but we need to have h for later
+	class Task {
 	  private:
-		handle_type h;
+		std::coroutine_handle<details::Promise> h;
 
 	  public:
 		/**
@@ -186,12 +102,22 @@ namespace exathread {
 		/**
 		 * @brief Create a task managing a coroutine
 		 */
-		explicit Task(handle_type h) : h(h) {}
+		explicit Task(std::coroutine_handle<details::Promise> h) : h(h) {}
 
-		///@cond
-		Task(const Task&) = delete;
-		Task& operator=(const Task&) = delete;
-		///@endcond
+		/**
+		 * @brief Copy construction
+		 */
+		Task(const Task& other) : h(other.h) {}
+
+		/**
+		 * @brief Copy assignment
+		 */
+		Task& operator=(const Task& other) {
+			if(this != &other) {
+				h = other.h;
+			}
+			return *this;
+		}
 
 		/**
 		 * @brief Move construction
@@ -219,7 +145,7 @@ namespace exathread {
 		 *
 		 * @return Completion state
 		 */
-		bool done() const noexcept override {
+		bool done() const noexcept {
 			return !h || h.done();
 		}
 
@@ -228,7 +154,7 @@ namespace exathread {
 		 *
 		 * @throws std::logic_error If the task is done
 		 */
-		void resume() override {
+		void resume() {
 			if(done()) throw std::logic_error("Cannot resume a done task!");
 			h.resume();
 		}
@@ -238,7 +164,7 @@ namespace exathread {
 		 *
 		 * @return The promise data
 		 */
-		promise_type& promise() noexcept {
+		details::Promise& promise() noexcept {
 			return h.promise();
 		}
 
@@ -247,7 +173,7 @@ namespace exathread {
 		 *
 		 * @return The promise data
 		 */
-		const promise_type& promise() const noexcept {
+		const details::Promise& promise() const noexcept {
 			return h.promise();
 		}
 
@@ -256,34 +182,35 @@ namespace exathread {
 		 *
 		 * @return The coroutine handle
 		 */
-		handle_type handle() noexcept override {
+		std::coroutine_handle<details::Promise> handle() noexcept {
 			return h;
 		}
+	};
 
-		/**
-		 * @brief Get the pool that this task exists on
-		 *
-		 * @returns The pool if it still exists, or an empty pointer otherwise
-		 */
-		std::shared_ptr<Pool> getPool() noexcept override {
-			return promise().pool.expired() ? std::shared_ptr<Pool>() : promise().pool.lock();
-		}
+	/**
+	 * @brief Coroutine return type for void-returning functions
+	 *
+	 * @note Set this as your submitted function's return type if it returns @c void and wants to use yield operations
+	 */
+	class VoidTask : public Task {
+	  public:
+		using promise_type = details::VoidPromise;
 
-		/**
-		 * @brief Get the status of this task
-		 *
-		 * @returns The task status
-		 */
-		Status status() const noexcept override {
-			return promise().status;
-		}
+		explicit VoidTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
+		VoidTask(Task&& t) : Task(std::move(t)) {}
+	};
 
-		/**
-		 * @brief Set the status of this task
-		 */
-		void status(Status s) noexcept override {
-			promise().status = s;
-		}
+	/**
+	 * @brief Coroutine return type for value-returning functions
+	 *
+	 * @note Set this as your submitted function's return type if it returns something other than @c void and wants to use yield operations
+	 */
+	class ValueTask : public Task {
+	  public:
+		using promise_type = details::ValuePromise;
+
+		explicit ValueTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
+		ValueTask(Task&& t) : Task(std::move(t)) {}
 	};
 
 	template<typename T = void>
@@ -314,9 +241,7 @@ namespace exathread {
 		 *
 		 * @returns The future's current status
 		 */
-		Status checkStatus() const noexcept {
-			return task->promise().status;
-		};
+		Status checkStatus() const noexcept;
 
 		/**
 		 * @brief Cancel the future if it has not yet been executed
@@ -442,7 +367,7 @@ namespace exathread {
 		Future& operator=(Future&&) = default;
 		///@endcond
 	  private:
-		Task<T>* task;
+		Task task;
 
 		Future() {}
 		friend class Pool;
@@ -770,43 +695,104 @@ namespace exathread {
 
 namespace exathread {
 	namespace details {
+		struct Promise {
+			std::any val;					  //The stored result value
+			std::exception_ptr exception;	  //The stored result exception (if one is thrown)
+			Status status;					  //The status of the task
+			std::weak_ptr<Pool> pool;		  //The pool of execution
+			details::TaskGenerator* generator;//The generator for the task
+
+			void unhandled_exception() noexcept {
+				exception = std::current_exception();
+			}
+
+			std::suspend_always initial_suspend() noexcept {
+				status = Status::Scheduled;
+				return {};
+			}
+
+			std::suspend_always final_suspend() noexcept {
+				status = exception ? Status::Failed : Status::Complete;
+
+				//Schedule continuations if we're sure this all worked
+				if(!exception && val.has_value() && !pool.expired() && generator && generator->next) {
+					continuation();
+				}
+
+				return {};
+			}
+
+			virtual Task get_return_object() noexcept {
+				return {};
+			}
+
+		  private:
+			virtual void continuation() {}
+		};
+
 		struct TaskGenerator {
 		  public:
 			TaskGenerator* next = nullptr;
 
-			template<typename T>
-			TaskGenerator(std::function<Task<T>()> genfunc, std::weak_ptr<Pool> p) {
+			TaskGenerator(std::function<Task()> genfunc, std::weak_ptr<Pool> p) {
 				generator = [this, genfunc, p]() {
-					Task<T> task = genfunc();
+					Task task = genfunc();
 					task.promise().generator = this;
 					task.promise().pool = p;
-					return static_cast<ITask>(task);
+					return task;
 				};
 			}
 
-			ITask generate() {
+			Task generate() {
 				return generator();
 			}
 
 		  private:
-			std::function<ITask()> generator;
+			std::function<Task()> generator;
+		};
+
+		struct ValuePromise : public Promise {
+			template<typename T>
+				requires(!std::is_void_v<T>)
+			void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
+				val = std::move(value);
+			}
+
+			Task get_return_object() noexcept override {
+				return ValueTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
+			}
+
+			void continuation() override {
+				//TODO
+			}
+		};
+
+		struct VoidPromise : public Promise {
+			void return_void() noexcept {}
+
+			Task get_return_object() noexcept override {
+				return VoidTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
+			}
+
+			void continuation() override {
+				//TODO
+			}
 		};
 
 		struct YieldOp {
 			std::function<bool()> predicate;
-			ITask* task;
+			Task task;
 			bool await_ready() {
 				return predicate();
 			}
-			void await_suspend(std::coroutine_handle<> h) {
-				//TODO: Obtain the task somehow
-
-				//Mark the task as yielded
-				task->status(Status::Yielded);
+			void await_suspend(std::coroutine_handle<details::Promise> h) {
+				//Get the task and mark it as yielded
+				task = Task {h};
+				task.promise().status = Status::Yielded;
 			}
 			void await_resume() {
 				//Mark the task as executing again
-				task->status(Status::Executing);
+				task.promise().status = Status::Executing;
 			}
 		};
 
@@ -821,7 +807,7 @@ namespace exathread {
 		while(!stop.stop_requested()) {
 			//First check the yield list
 			for(auto yptr : data.yields) {
-				if(yptr->predicate()) yptr->task->resume();
+				if(yptr->predicate()) yptr->task.resume();
 			}
 		}
 	}
