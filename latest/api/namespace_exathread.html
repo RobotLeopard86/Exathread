@@ -55,7 +55,7 @@
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Namespace exathread::details" href="namespace_exathread__details.html" />
-    <link rel="prev" title="Namespace details" href="namespace_details.html" />
+    <link rel="prev" title="API Reference" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="latest" />
@@ -304,14 +304,14 @@
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_details.html">Namespace details</a></li>
-</ul>
-<ul class="current nav bd-sidenav">
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread__details.html">Namespace exathread::details</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1Promise.html">Struct Promise</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1TaskGenerator.html">Struct TaskGenerator</a></li>
@@ -320,10 +320,13 @@
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1ThreadData.html">Struct ThreadData</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1YieldOp.html">Struct YieldOp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1ValuePromise.html">Struct ValuePromise</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task_1_1promise__type.html">Struct Task::promise_type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1VoidPromise.html">Struct VoidPromise</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1YieldOp.html">Struct YieldOp</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a></li>
@@ -335,7 +338,13 @@
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Pool.html">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Task.html">Template Class Task</a></li>
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Task.html">Class Task</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1ValueTask.html">Class ValueTask</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1VoidTask.html">Class VoidTask</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
@@ -436,11 +445,12 @@
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"><span/></a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="structexathread_1_1Task_1_1promise__type.html#exhale-struct-structexathread-1-1task-1-1promise-type"><span class="std std-ref">Struct Task::promise_type</span></a></p></li>
 <li><p><a class="reference internal" href="classexathread_1_1Future.html#exhale-class-classexathread-1-1future"><span class="std std-ref">Template Class Future</span></a></p></li>
 <li><p><a class="reference internal" href="classexathread_1_1MultiFuture.html#exhale-class-classexathread-1-1multifuture"><span class="std std-ref">Template Class MultiFuture</span></a></p></li>
 <li><p><a class="reference internal" href="classexathread_1_1Pool.html#exhale-class-classexathread-1-1pool"><span class="std std-ref">Class Pool</span></a></p></li>
-<li><p><a class="reference internal" href="classexathread_1_1Task.html#exhale-class-classexathread-1-1task"><span class="std std-ref">Template Class Task</span></a></p></li>
+<li><p><a class="reference internal" href="classexathread_1_1Task.html#exhale-class-classexathread-1-1task"><span class="std std-ref">Class Task</span></a></p></li>
+<li><p><a class="reference internal" href="classexathread_1_1ValueTask.html#exhale-class-classexathread-1-1valuetask"><span class="std std-ref">Class ValueTask</span></a></p></li>
+<li><p><a class="reference internal" href="classexathread_1_1VoidTask.html#exhale-class-classexathread-1-1voidtask"><span class="std std-ref">Class VoidTask</span></a></p></li>
 </ul>
 </section>
 <section id="enums">
@@ -474,12 +484,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="namespace_details.html"
+       href="index.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Namespace details</p>
+        <p class="prev-next-title">API Reference</p>
       </div>
     </a>
     <a class="right-next"

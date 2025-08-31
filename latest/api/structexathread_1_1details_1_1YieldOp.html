@@ -54,8 +54,8 @@
         </script>
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Struct Task::promise_type" href="structexathread_1_1Task_1_1promise__type.html" />
-    <link rel="prev" title="Struct ThreadData" href="structexathread_1_1details_1_1ThreadData.html" />
+    <link rel="next" title="Template Class Future" href="classexathread_1_1Future.html" />
+    <link rel="prev" title="Struct VoidPromise" href="structexathread_1_1details_1_1VoidPromise.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="latest" />
@@ -305,13 +305,13 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="namespace_details.html">Namespace details</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread.html">Namespace exathread</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="namespace_exathread__details.html">Namespace exathread::details</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1Promise.html">Struct Promise</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1TaskGenerator.html">Struct TaskGenerator</a></li>
@@ -319,11 +319,14 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1ThreadData.html">Struct ThreadData</a></li>
 </ul>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Struct YieldOp</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1ValuePromise.html">Struct ValuePromise</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1Task_1_1promise__type.html">Struct Task::promise_type</a></li>
+<li class="toctree-l1"><a class="reference internal" href="structexathread_1_1details_1_1VoidPromise.html">Struct VoidPromise</a></li>
+</ul>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Struct YieldOp</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Future.html">Template Class Future</a></li>
@@ -335,7 +338,13 @@
 <li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Pool.html">Class Pool</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Task.html">Template Class Task</a></li>
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1Task.html">Class Task</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1ValueTask.html">Class ValueTask</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="classexathread_1_1VoidTask.html">Class VoidTask</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
@@ -433,8 +442,8 @@
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIEE">
-<span id="_CPPv3N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIEE"></span><span id="_CPPv2N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIEE"></span><span id="exathread::details::YieldOp::await_suspend__std::coroutine_handle::"></span><span class="target" id="structexathread_1_1details_1_1YieldOp_1a685bc0a32c541269817613e614c7debb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">await_suspend</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">coroutine_handle</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">h</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIEE" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIN7details7PromiseEEE">
+<span id="_CPPv3N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIN7details7PromiseEEE"></span><span id="_CPPv2N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIN7details7PromiseEEE"></span><span id="exathread::details::YieldOp::await_suspend__std::coroutine_handle:details::Promise:"></span><span class="target" id="structexathread_1_1details_1_1YieldOp_1a5ad830098679ef7b93694c7aa8cb93d6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">await_suspend</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">coroutine_handle</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="structexathread_1_1details_1_1Promise.html#_CPPv4N9exathread7details7PromiseE" title="exathread::details::Promise"><span class="n"><span class="pre">Promise</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">h</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIN7details7PromiseEEE" title="Link to this definition"><span/></a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
@@ -452,7 +461,7 @@
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread7details7YieldOp4taskE">
-<span id="_CPPv3N9exathread7details7YieldOp4taskE"></span><span id="_CPPv2N9exathread7details7YieldOp4taskE"></span><span id="exathread::details::YieldOp::task__ITaskP"></span><span class="target" id="structexathread_1_1details_1_1YieldOp_1a35946e5e63d38387224acd5871abf4e8"></span><span class="n"><span class="pre">ITask</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">task</span></span></span><a class="headerlink" href="#_CPPv4N9exathread7details7YieldOp4taskE" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3N9exathread7details7YieldOp4taskE"></span><span id="_CPPv2N9exathread7details7YieldOp4taskE"></span><span id="exathread::details::YieldOp::task__Task"></span><span class="target" id="structexathread_1_1details_1_1YieldOp_1a4423a66a56148166b211573976f967c4"></span><a class="reference internal" href="classexathread_1_1Task.html#_CPPv4N9exathread4TaskE" title="exathread::Task"><span class="n"><span class="pre">Task</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">task</span></span></span><a class="headerlink" href="#_CPPv4N9exathread7details7YieldOp4taskE" title="Link to this definition"><span/></a><br /></dt>
 <dd></dd></dl>
 
 </div>
@@ -472,20 +481,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="structexathread_1_1details_1_1ThreadData.html"
+       href="structexathread_1_1details_1_1VoidPromise.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Struct ThreadData</p>
+        <p class="prev-next-title">Struct VoidPromise</p>
       </div>
     </a>
     <a class="right-next"
-       href="structexathread_1_1Task_1_1promise__type.html"
+       href="classexathread_1_1Future.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Struct Task::promise_type</p>
+        <p class="prev-next-title">Template Class Future</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -511,7 +520,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#struct-documentation">Struct Documentation</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOpE"><code class="docutils literal notranslate"><span class="pre">YieldOp</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOp11await_readyEv"><code class="docutils literal notranslate"><span class="pre">YieldOp::await_ready()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIEE"><code class="docutils literal notranslate"><span class="pre">YieldOp::await_suspend()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOp13await_suspendENSt16coroutine_handleIN7details7PromiseEEE"><code class="docutils literal notranslate"><span class="pre">YieldOp::await_suspend()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOp12await_resumeEv"><code class="docutils literal notranslate"><span class="pre">YieldOp::await_resume()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOp9predicateE"><code class="docutils literal notranslate"><span class="pre">YieldOp::predicate</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread7details7YieldOp4taskE"><code class="docutils literal notranslate"><span class="pre">YieldOp::task</span></code></a></li>
