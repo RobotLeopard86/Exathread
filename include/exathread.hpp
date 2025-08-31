@@ -107,17 +107,12 @@ namespace exathread {
 		/**
 		 * @brief Copy construction
 		 */
-		Task(const Task& other) : h(other.h) {}
+		Task(const Task& other);
 
 		/**
 		 * @brief Copy assignment
 		 */
-		Task& operator=(const Task& other) {
-			if(this != &other) {
-				h = other.h;
-			}
-			return *this;
-		}
+		Task& operator=(const Task& other);
 
 		/**
 		 * @brief Move construction
@@ -136,9 +131,7 @@ namespace exathread {
 			return *this;
 		}
 
-		~Task() noexcept {
-			if(h) h.destroy();
-		}
+		~Task() noexcept;
 
 		/**
 		 * @brief Check if a task has completed execution
@@ -384,7 +377,7 @@ namespace exathread {
 		 *
 		 * @throws std::logic_error If any of the futures belongs to a different pools from the others
 		 */
-		explicit MultiFuture(std::shared_ptr<Future<T>>, ...);
+		explicit MultiFuture(Future<T>, ...);
 
 		/**
 		 * @brief Get the number of collected futures
@@ -438,7 +431,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
 			requires std::invocable<F&&, std::vector<T>&&, ExArgs&&...>
-		[[nodiscard]] std::shared_ptr<Future<R>> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after these futures with no result
@@ -504,7 +497,7 @@ namespace exathread {
 		std::vector<T> results();
 
 	  private:
-		std::vector<std::shared_ptr<Future<T>>> futures;
+		std::vector<Future<T>> futures;
 	};
 
 	/**
@@ -543,7 +536,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
 			requires std::invocable<F&&, Args&&...>
-		[[nodiscard]] std::shared_ptr<Future<R>> submit(F func, Args... args);
+		[[nodiscard]] Future<R> submit(F func, Args... args);
 
 		/**
 		 * @brief Submit a task into the pool with no result
@@ -701,6 +694,7 @@ namespace exathread {
 			Status status;					  //The status of the task
 			std::weak_ptr<Pool> pool;		  //The pool of execution
 			details::TaskGenerator* generator;//The generator for the task
+			std::atomic_uint handleRefCount;  //Reference count for how many tasks maintain the coroutine handle
 
 			void unhandled_exception() noexcept {
 				exception = std::current_exception();
@@ -711,16 +705,7 @@ namespace exathread {
 				return {};
 			}
 
-			std::suspend_always final_suspend() noexcept {
-				status = exception ? Status::Failed : Status::Complete;
-
-				//Schedule continuations if we're sure this all worked
-				if(!exception && val.has_value() && !pool.expired() && generator && generator->next) {
-					continuation();
-				}
-
-				return {};
-			}
+			std::suspend_always final_suspend() noexcept;
 
 			virtual Task get_return_object() noexcept {
 				return {};
@@ -732,7 +717,7 @@ namespace exathread {
 
 		struct TaskGenerator {
 		  public:
-			TaskGenerator* next = nullptr;
+			std::unique_ptr<TaskGenerator> next;
 
 			TaskGenerator(std::function<Task()> genfunc, std::weak_ptr<Pool> p) {
 				generator = [this, genfunc, p]() {
@@ -779,6 +764,17 @@ namespace exathread {
 			}
 		};
 
+		inline std::suspend_always Promise::final_suspend() noexcept {
+			status = exception ? Status::Failed : Status::Complete;
+
+			//Schedule continuations if success and pool still okay (double-check)
+			if(!exception && val.has_value() && !pool.expired()) {
+				continuation();
+			}
+
+			return {};
+		}
+
 		struct YieldOp {
 			std::function<bool()> predicate;
 			Task task;
@@ -801,6 +797,25 @@ namespace exathread {
 			std::stop_source stop;
 			std::vector<std::shared_ptr<YieldOp>> yields;
 		};
+	}
+
+	inline Task::Task(const Task& other) : h(other.h) {
+		promise().handleRefCount++;
+	}
+
+	inline Task& Task::operator=(const Task& other) {
+		if(this != &other) {
+			h = other.h;
+			promise().handleRefCount++;
+		}
+		return *this;
+	}
+
+	inline Task::~Task() noexcept {
+		promise().handleRefCount--;
+		if(promise().handleRefCount <= 0) {
+			h.destroy();
+		}
 	}
 
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
