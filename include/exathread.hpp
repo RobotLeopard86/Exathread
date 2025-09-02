@@ -77,10 +77,13 @@ namespace exathread {
 	namespace details {
 		struct Promise;
 		struct VoidPromise;
+		template<typename T>
+			requires(!std::is_void_v<T>)
 		struct ValuePromise;
 		struct TaskGenerator;
 		struct YieldOp;
 		struct ThreadData;
+		class Deque;
 	}
 	///@endcond
 
@@ -197,10 +200,14 @@ namespace exathread {
 	 * @brief Coroutine return type for value-returning functions
 	 *
 	 * @note Set this as your submitted function's return type if it returns something other than @c void and wants to use yield operations
+	 *
+	 * @tparam The return type of your function (this has no effect and only exists for readability purposes)
 	 */
+	template<typename T>
+		requires(!std::is_void_v<T>)
 	class ValueTask : public Task {
 	  public:
-		using promise_type = details::ValuePromise;
+		using promise_type = details::ValuePromise<T>;
 
 		explicit ValueTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
 		ValueTask(Task&& t) : Task(std::move(t)) {}
@@ -736,15 +743,15 @@ namespace exathread {
 			std::function<Task()> generator;
 		};
 
+		template<typename T>
+			requires(!std::is_void_v<T>)
 		struct ValuePromise : public Promise {
-			template<typename T>
-				requires(!std::is_void_v<T>)
 			void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
 				val = std::move(value);
 			}
 
 			Task get_return_object() noexcept override {
-				return ValueTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
+				return ValueTask<T> {std::coroutine_handle<details::Promise>::from_promise(*this)};
 			}
 
 			void continuation() override {
@@ -794,7 +801,6 @@ namespace exathread {
 
 		struct ThreadData {
 			std::jthread thread;
-			std::stop_source stop;
 			std::vector<std::shared_ptr<YieldOp>> yields;
 		};
 	}
