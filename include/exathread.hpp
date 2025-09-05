@@ -824,6 +824,7 @@ namespace exathread {
 		do {
 			fh0 = frontHead;
 			fh1 = frontHead + 1;
+			if(fh1 >= backTail) throw std::runtime_error("Queue collision detected!");
 		} while(!frontHead.compare_exchange_strong(fh0, fh1));
 
 		//Read from safe slot
@@ -845,6 +846,18 @@ namespace exathread {
 			//First check the yield list
 			for(auto yptr : data.yields) {
 				if(yptr->predicate()) yptr->task.resume();
+			}
+
+			//Then check our own queue
+			if(data.queueSize() > 0) {
+				//We have to try/catch here in case a steal happened right before here and the queue has become empty
+				try {
+					//Fetch the next task and run it
+					Task t = data.pop();
+					t.resume();
+				} catch(...) {}
+			} else {
+				//TODO: Steal
 			}
 		}
 	}
