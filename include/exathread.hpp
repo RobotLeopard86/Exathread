@@ -65,6 +65,7 @@ namespace exathread {
 	 * @brief The current state of a future
 	 */
 	enum class Status {
+		Pending,  ///<The task has not yet been scheduled for execution
 		Scheduled,///<The task has been scheduled for execution but has not begun
 		Cancelled,///<Execution of the task was cancelled
 		Executing,///<The task is currently executing
@@ -80,10 +81,8 @@ namespace exathread {
 		template<typename T>
 			requires(!std::is_void_v<T>)
 		struct ValuePromise;
-		struct TaskGenerator;
 		struct YieldOp;
 		struct ThreadData;
-		class Deque;
 	}
 	///@endcond
 
@@ -225,10 +224,6 @@ namespace exathread {
 	template<typename T>
 	class Future {
 	  public:
-		///@cond
-		using value_type = T;
-		///@endcond
-
 		/**
 		 * @brief Block until execution had completed
 		 *
@@ -523,12 +518,11 @@ namespace exathread {
 			return std::shared_ptr<Pool>(new Pool(threadCount));
 		}
 
-		//Move only
 		///@cond
 		Pool(const Pool&) = delete;
 		Pool& operator=(const Pool&) = delete;
-		Pool(Pool&&) = default;
-		Pool& operator=(Pool&&) = default;
+		Pool(Pool&&) = delete;
+		Pool& operator=(Pool&&) = delete;
 		///@endcond
 
 		/**
@@ -612,8 +606,6 @@ namespace exathread {
 		static std::size_t totalThreads;
 
 		std::vector<details::ThreadData> threads;
-		std::vector<int> threadsByLeastTasks;
-		void resortThreads();
 	};
 
 	/**
@@ -696,23 +688,33 @@ namespace exathread {
 namespace exathread {
 	namespace details {
 		struct Promise {
-			std::any val;					  //The stored result value
-			std::exception_ptr exception;	  //The stored result exception (if one is thrown)
-			Status status;					  //The status of the task
-			std::weak_ptr<Pool> pool;		  //The pool of execution
-			details::TaskGenerator* generator;//The generator for the task
-			std::atomic_uint handleRefCount;  //Reference count for how many tasks maintain the coroutine handle
+			std::any val;						  //The stored result value
+			std::exception_ptr exception;		  //The stored result exception (if one is thrown)
+			Status status;						  //The status of the task
+			std::weak_ptr<Pool> pool;			  //The pool of execution
+			std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
+			std::optional<std::vector<Task>> next;//The next task(s) to schedule after the completion of this one
 
 			void unhandled_exception() noexcept {
 				exception = std::current_exception();
 			}
 
 			std::suspend_always initial_suspend() noexcept {
-				status = Status::Scheduled;
+				status = Status::Pending;
 				return {};
 			}
 
-			std::suspend_always final_suspend() noexcept;
+			std::suspend_always final_suspend() noexcept {
+				//Set status
+				status = exception ? Status::Failed : Status::Complete;
+
+				//Schedule continuations if success and pool still okay (double-check)
+				if(!exception && val.has_value() && !pool.expired()) {
+					continuation();
+				}
+
+				return {};
+			}
 
 			virtual Task get_return_object() noexcept {
 				return {};
@@ -720,27 +722,6 @@ namespace exathread {
 
 		  private:
 			virtual void continuation() {}
-		};
-
-		struct TaskGenerator {
-		  public:
-			std::unique_ptr<TaskGenerator> next;
-
-			TaskGenerator(std::function<Task()> genfunc, std::weak_ptr<Pool> p) {
-				generator = [this, genfunc, p]() {
-					Task task = genfunc();
-					task.promise().generator = this;
-					task.promise().pool = p;
-					return task;
-				};
-			}
-
-			Task generate() {
-				return generator();
-			}
-
-		  private:
-			std::function<Task()> generator;
 		};
 
 		template<typename T>
@@ -771,17 +752,6 @@ namespace exathread {
 			}
 		};
 
-		inline std::suspend_always Promise::final_suspend() noexcept {
-			status = exception ? Status::Failed : Status::Complete;
-
-			//Schedule continuations if success and pool still okay (double-check)
-			if(!exception && val.has_value() && !pool.expired()) {
-				continuation();
-			}
-
-			return {};
-		}
-
 		struct YieldOp {
 			std::function<bool()> predicate;
 			Task task;
@@ -802,6 +772,11 @@ namespace exathread {
 		struct ThreadData {
 			std::jthread thread;
 			std::vector<std::shared_ptr<YieldOp>> yields;
+			std::array<Task, 1024> ringbuf;
+			std::atomic<uint64_t> frontHead, frontTail, backHead, backTail;
+			void push(Task&& t);
+			Task pop();
+			std::size_t queueSize();
 		};
 	}
 
@@ -822,6 +797,47 @@ namespace exathread {
 		if(promise().handleRefCount <= 0) {
 			h.destroy();
 		}
+	}
+
+	inline void details::ThreadData::push(Task&& t) {
+		//Reserve slot in ring buffer
+		uint64_t bh0 = 0, bh1 = 0;
+		do {
+			bh0 = backHead;
+			bh1 = backHead + 1;
+			if(bh1 == frontTail) throw std::runtime_error("Ring buffer overflow!");
+		} while(!backHead.compare_exchange_strong(bh0, bh1));
+
+		//Write to reserved slot
+		ringbuf[bh1 % ringbuf.size()] = std::move(t);
+
+		//Advance tail index when possible
+		while(!backTail.compare_exchange_strong(bh0, bh1)) std::this_thread::yield();
+	}
+
+	inline Task details::ThreadData::pop() {
+		//Check if empty
+		if(frontHead == backTail) throw std::runtime_error("Queue is empty!");
+
+		//Reserve slot in ring buffer
+		uint64_t fh0 = 0, fh1 = 0;
+		do {
+			fh0 = frontHead;
+			fh1 = frontHead + 1;
+		} while(!frontHead.compare_exchange_strong(fh0, fh1));
+
+		//Read from safe slot
+		Task t = ringbuf[fh1 % ringbuf.size()];
+
+		//Advance tail index when possible
+		while(!frontTail.compare_exchange_strong(fh0, fh1)) std::this_thread::yield();
+
+		//Return value
+		return t;
+	}
+
+	inline std::size_t details::ThreadData::queueSize() {
+		return backTail - frontTail;
 	}
 
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
