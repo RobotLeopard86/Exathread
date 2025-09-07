@@ -43,6 +43,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #pragma once
 
 #include <any>
+#include <atomic>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
@@ -109,17 +110,17 @@ namespace exathread {
 		/**
 		 * @brief Copy construction
 		 */
-		Task(const Task& other);
+		Task(const Task& other) noexcept;
 
 		/**
 		 * @brief Copy assignment
 		 */
-		Task& operator=(const Task& other);
+		Task& operator=(const Task& other) noexcept;
 
 		/**
 		 * @brief Move construction
 		 */
-		Task(Task&& other) : h(std::exchange(other.h, {})) {}
+		Task(Task&& other) noexcept : h(std::exchange(other.h, {})) {}
 
 		/**
 		 * @brief Move assignment
@@ -772,19 +773,22 @@ namespace exathread {
 		struct ThreadData {
 			std::jthread thread;
 			std::vector<std::shared_ptr<YieldOp>> yields;
-			std::array<Task, 1024> ringbuf;
-			std::atomic<uint64_t> frontHead, frontTail, backHead, backTail;
+			std::array<Task, 2048> ringbuf;
+			alignas(64) std::atomic<uint64_t> frontHead;
+			alignas(64) std::atomic<uint64_t> frontTail;
+			alignas(64) std::atomic<uint64_t> backHead;
+			alignas(64) std::atomic<uint64_t> backTail;
 			void push(Task&& t);
 			Task pop();
 			std::size_t queueSize();
 		};
 	}
 
-	inline Task::Task(const Task& other) : h(other.h) {
+	inline Task::Task(const Task& other) noexcept : h(other.h) {
 		promise().handleRefCount++;
 	}
 
-	inline Task& Task::operator=(const Task& other) {
+	inline Task& Task::operator=(const Task& other) noexcept {
 		if(this != &other) {
 			h = other.h;
 			promise().handleRefCount++;
@@ -800,45 +804,75 @@ namespace exathread {
 	}
 
 	inline void details::ThreadData::push(Task&& t) {
-		//Reserve slot in ring buffer
+		//Reserve slot in ring buffer (CAS)
 		uint64_t bh0 = 0, bh1 = 0;
 		do {
-			bh0 = backHead;
-			bh1 = backHead + 1;
-			if(bh1 == frontTail) throw std::runtime_error("Ring buffer overflow!");
-		} while(!backHead.compare_exchange_strong(bh0, bh1));
+			//Advance indices with wrap-around protection
+			uint64_t ft = frontTail.load(std::memory_order_acquire);
+			bh0 = backHead.load(std::memory_order_acquire);
+			bh1 = bh0 + 1;
+			while((bh1 - ft) >= ringbuf.size()) {
+				std::this_thread::yield();
+				ft = frontTail.load(std::memory_order_acquire);
+				bh0 = backHead.load(std::memory_order_acquire);
+				bh1 = bh0 + 1;
+			}
+		} while(!backHead.compare_exchange_strong(bh0, bh1, std::memory_order_acq_rel, std::memory_order_relaxed));
 
 		//Write to reserved slot
 		ringbuf[bh1 % ringbuf.size()] = std::move(t);
 
 		//Advance tail index when possible
-		while(!backTail.compare_exchange_strong(bh0, bh1)) std::this_thread::yield();
+		uint64_t tailBase = backTail.load(std::memory_order_relaxed);
+		if(bh1 <= tailBase) return;
+		while(!backTail.compare_exchange_strong(tailBase, bh1, std::memory_order_release, std::memory_order_relaxed)) {
+			std::this_thread::yield();
+
+			//Make sure the tail hasn't passed what we thought it was
+			if(tailBase >= bh1) return;
+		}
 	}
 
 	inline Task details::ThreadData::pop() {
 		//Check if empty
-		if(frontHead == backTail) throw std::runtime_error("Queue is empty!");
+		if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
 
-		//Reserve slot in ring buffer
+		//Reserve slot in ring buffer (CAS)
 		uint64_t fh0 = 0, fh1 = 0;
 		do {
-			fh0 = frontHead;
-			fh1 = frontHead + 1;
-			if(fh1 >= backTail) throw std::runtime_error("Queue collision detected!");
-		} while(!frontHead.compare_exchange_strong(fh0, fh1));
+			//Advance indices
+			fh0 = frontHead.load(std::memory_order_acquire);
+			fh1 = fh0 + 1;
+
+			//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
+			if(fh1 < frontTail.load(std::memory_order_acquire)) return pop();
+
+			//Wrap-around prevention (head can't wrap around past tail)
+			if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) return pop();
+
+			//Index pass prevention (front can't get ahead of back)
+			if(fh1 > backTail.load(std::memory_order_acquire)) return pop();//throw std::runtime_error("Queue end collision detected!");
+		} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
 
 		//Read from safe slot
-		Task t = ringbuf[fh1 % ringbuf.size()];
+		Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
 
 		//Advance tail index when possible
-		while(!frontTail.compare_exchange_strong(fh0, fh1)) std::this_thread::yield();
+		uint64_t tailBase = frontTail.load(std::memory_order_relaxed);
+		if(fh1 <= tailBase) return t;
+		while(!frontTail.compare_exchange_strong(tailBase, fh1, std::memory_order_release, std::memory_order_relaxed)) {
+			std::this_thread::yield();
+
+			//Make sure the tail hasn't passed what we thought it was
+			if(tailBase >= fh1) return t;
+		}
 
 		//Return value
 		return t;
 	}
 
 	inline std::size_t details::ThreadData::queueSize() {
-		return backTail - frontTail;
+		return backTail.load(std::memory_order_acquire) - frontTail.load(std::memory_order_acquire);
 	}
 
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
