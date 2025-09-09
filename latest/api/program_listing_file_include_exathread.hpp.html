@@ -627,9 +627,8 @@
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">threads</span><span class="p">;</span>
 
 <span class="w">        </span><span class="k">friend</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">worker</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">stop_token</span><span class="p">,</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="o">&amp;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">friend</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">details</span><span class="o">::</span><span class="n">YieldOp</span><span class="p">;</span>
 <span class="w">    </span><span class="p">};</span>
-
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Pool</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">getCurrentThreadPool</span><span class="p">();</span>
 
 <span class="w">    </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Rep</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Period</span><span class="o">&gt;</span>
 <span class="w">    </span><span class="p">[[</span><span class="n">nodiscard</span><span class="p">]]</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">YieldOp</span><span class="w"> </span><span class="n">yieldFor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">duration</span><span class="o">&lt;</span><span class="n">Rep</span><span class="p">,</span><span class="w"> </span><span class="n">Period</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">duration</span><span class="p">);</span>
@@ -649,125 +648,88 @@
 <span class="c1">//=============== IMPLEMENTATION ===============</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">exathread</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">namespace</span><span class="w"> </span><span class="nn">details</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">Promise</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">any</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w">                         </span><span class="c1">//The stored result value</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">exception</span><span class="p">;</span><span class="w">         </span><span class="c1">//The stored result exception (if one is thrown)</span>
-<span class="w">            </span><span class="n">Status</span><span class="w"> </span><span class="n">status</span><span class="p">;</span><span class="w">                        </span><span class="c1">//The status of the task</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">Pool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pool</span><span class="p">;</span><span class="w">             </span><span class="c1">//The pool of execution</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="kt">atomic_uint</span><span class="w"> </span><span class="n">handleRefCount</span><span class="p">;</span><span class="w">      </span><span class="c1">//Reference count for how many tasks maintain the coroutine handle</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Task</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">next</span><span class="p">;</span><span class="c1">//The next task(s) to schedule after the completion of this one</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">details</span><span class="o">::</span><span class="n">Promise</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">any</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w">                         </span><span class="c1">//The stored result value</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">exception</span><span class="p">;</span><span class="w">         </span><span class="c1">//The stored result exception (if one is thrown)</span>
+<span class="w">        </span><span class="n">Status</span><span class="w"> </span><span class="n">status</span><span class="p">;</span><span class="w">                        </span><span class="c1">//The status of the task</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">Pool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pool</span><span class="p">;</span><span class="w">             </span><span class="c1">//The pool of execution</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">;</span><span class="w">                </span><span class="c1">//The index of the thread this task is running on</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="kt">atomic_uint</span><span class="w"> </span><span class="n">handleRefCount</span><span class="p">;</span><span class="w">      </span><span class="c1">//Reference count for how many tasks maintain the coroutine handle</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Task</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">next</span><span class="p">;</span><span class="c1">//The next task(s) to schedule after the completion of this one</span>
 
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">unhandled_exception</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">exception</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">();</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">suspend_always</span><span class="w"> </span><span class="nf">initial_suspend</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Pending</span><span class="p">;</span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">suspend_always</span><span class="w"> </span><span class="nf">final_suspend</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="c1">//Set status</span>
-<span class="w">                </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exception</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Failed</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Complete</span><span class="p">;</span>
-
-<span class="w">                </span><span class="c1">//Schedule continuations if success and pool still okay (double-check)</span>
-<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">exception</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">val</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">pool</span><span class="p">.</span><span class="n">expired</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                    </span><span class="n">continuation</span><span class="p">();</span>
-<span class="w">                </span><span class="p">}</span>
-
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">            </span><span class="k">virtual</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">get_return_object</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">          </span><span class="k">private</span><span class="o">:</span>
-<span class="w">            </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">continuation</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
-<span class="w">        </span><span class="p">};</span>
-
-<span class="w">        </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="w">            </span><span class="k">requires</span><span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_void_v</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span>
-<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">ValuePromise</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Promise</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">return_value</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible_v</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">            </span><span class="n">Task</span><span class="w"> </span><span class="nf">get_return_object</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">ValueTask</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">Promise</span><span class="o">&gt;::</span><span class="n">from_promise</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)};</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">continuation</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="c1">//TODO</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">};</span>
-
-<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">VoidPromise</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Promise</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">return_void</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{}</span>
-
-<span class="w">            </span><span class="n">Task</span><span class="w"> </span><span class="nf">get_return_object</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">VoidTask</span><span class="w"> </span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">Promise</span><span class="o">&gt;::</span><span class="n">from_promise</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)};</span>
-<span class="w">            </span><span class="p">}</span>
-
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">continuation</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="c1">//TODO</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">};</span>
-
-<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">YieldOp</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">bool</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="n">predicate</span><span class="p">;</span>
-<span class="w">            </span><span class="n">Task</span><span class="w"> </span><span class="n">task</span><span class="p">;</span>
-<span class="w">            </span><span class="kt">bool</span><span class="w"> </span><span class="nf">await_ready</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="n">predicate</span><span class="p">();</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">await_suspend</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">Promise</span><span class="o">&gt;</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="c1">//Get the task and mark it as yielded</span>
-<span class="w">                </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="p">{</span><span class="n">h</span><span class="p">};</span>
-<span class="w">                </span><span class="n">task</span><span class="p">.</span><span class="n">promise</span><span class="p">().</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Yielded</span><span class="p">;</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">await_resume</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="c1">//Mark the task as executing again</span>
-<span class="w">                </span><span class="n">task</span><span class="p">.</span><span class="n">promise</span><span class="p">().</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Executing</span><span class="p">;</span>
-<span class="w">            </span><span class="p">}</span>
-<span class="w">        </span><span class="p">};</span>
-
-<span class="w">        </span><span class="k">struct</span><span class="w"> </span><span class="nc">ThreadData</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">jthread</span><span class="w"> </span><span class="kr">thread</span><span class="p">;</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">YieldOp</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">yields</span><span class="p">;</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">Pool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pool</span><span class="p">;</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">curSteal</span><span class="p">,</span><span class="w"> </span><span class="n">myIndex</span><span class="p">;</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="n">Task</span><span class="p">,</span><span class="w"> </span><span class="mi">2048</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ringbuf</span><span class="p">;</span>
-<span class="w">            </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">frontHead</span><span class="p">;</span>
-<span class="w">            </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">frontTail</span><span class="p">;</span>
-<span class="w">            </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">backHead</span><span class="p">;</span>
-<span class="w">            </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">backTail</span><span class="p">;</span>
-<span class="w">            </span><span class="kt">void</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="n">Task</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">);</span>
-<span class="w">            </span><span class="n">Task</span><span class="w"> </span><span class="nf">pop</span><span class="p">();</span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="nf">queueSize</span><span class="p">();</span>
-<span class="w">        </span><span class="p">};</span>
-<span class="w">    </span><span class="p">}</span>
-
-<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="o">::</span><span class="n">Task</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Task</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">h</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="o">++</span><span class="p">;</span>
-<span class="w">    </span><span class="p">}</span>
-
-<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="o">&amp;</span><span class="w"> </span><span class="n">Task</span><span class="o">::</span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Task</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">h</span><span class="p">;</span>
-<span class="w">            </span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="o">++</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">unhandled_exception</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">exception</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">();</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
-<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="o">::~</span><span class="n">Task</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="o">--</span><span class="p">;</span>
-<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">h</span><span class="p">.</span><span class="n">destroy</span><span class="p">();</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">suspend_always</span><span class="w"> </span><span class="nf">initial_suspend</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Pending</span><span class="p">;</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="o">::</span><span class="n">push</span><span class="p">(</span><span class="n">Task</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">suspend_always</span><span class="w"> </span><span class="nf">final_suspend</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">//Set status</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exception</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Failed</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Complete</span><span class="p">;</span>
+
+<span class="w">            </span><span class="c1">//Schedule continuations if success and pool still okay (double-check)</span>
+<span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">exception</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">val</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">pool</span><span class="p">.</span><span class="n">expired</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">continuation</span><span class="p">();</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">get_return_object</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">      </span><span class="k">private</span><span class="o">:</span>
+<span class="w">        </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">continuation</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<span class="w">        </span><span class="k">requires</span><span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_void_v</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">details</span><span class="o">::</span><span class="n">ValuePromise</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Promise</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">return_value</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible_v</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="n">Task</span><span class="w"> </span><span class="nf">get_return_object</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">ValueTask</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">Promise</span><span class="o">&gt;::</span><span class="n">from_promise</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)};</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">continuation</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">//TODO</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">details</span><span class="o">::</span><span class="n">VoidPromise</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Promise</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">return_void</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">        </span><span class="n">Task</span><span class="w"> </span><span class="nf">get_return_object</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">VoidTask</span><span class="w"> </span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">Promise</span><span class="o">&gt;::</span><span class="n">from_promise</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)};</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">continuation</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">//TODO</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">jthread</span><span class="w"> </span><span class="kr">thread</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">YieldOp</span><span class="o">&gt;</span><span class="w"> </span><span class="n">yields</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">Pool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pool</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">curSteal</span><span class="p">,</span><span class="w"> </span><span class="n">myIndex</span><span class="p">;</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="n">Task</span><span class="p">,</span><span class="w"> </span><span class="mi">2048</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ringbuf</span><span class="p">;</span>
+<span class="w">        </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">frontHead</span><span class="p">;</span>
+<span class="w">        </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">frontTail</span><span class="p">;</span>
+<span class="w">        </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">backHead</span><span class="p">;</span>
+<span class="w">        </span><span class="k">alignas</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">backTail</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">push</span><span class="p">(</span><span class="n">Task</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">);</span>
+<span class="w">        </span><span class="n">Task</span><span class="w"> </span><span class="nf">pop</span><span class="p">();</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="nf">queueSize</span><span class="p">();</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">details::ThreadData::push</span><span class="p">(</span><span class="n">Task</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">//Reserve slot in ring buffer (CAS)</span>
 <span class="w">        </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">bh0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">bh1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="w">        </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
@@ -797,7 +759,7 @@
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="o">::</span><span class="n">pop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">details::ThreadData::pop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">while</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="c1">//Check if empty</span>
 <span class="w">            </span><span class="k">if</span><span class="p">(</span><span class="n">queueSize</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;Queue is empty!&quot;</span><span class="p">);</span>
@@ -837,15 +799,58 @@
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="o">::</span><span class="n">queueSize</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="nf">details::ThreadData::queueSize</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">backTail</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">frontTail</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">details</span><span class="o">::</span><span class="n">YieldOp</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">bool</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="n">predicate</span><span class="p">;</span>
+<span class="w">        </span><span class="n">Task</span><span class="w"> </span><span class="n">task</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">bool</span><span class="w"> </span><span class="nf">await_ready</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">predicate</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">await_suspend</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">coroutine_handle</span><span class="o">&lt;</span><span class="n">details</span><span class="o">::</span><span class="n">Promise</span><span class="o">&gt;</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">//Get the task and mark it as yielded</span>
+<span class="w">            </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="p">{</span><span class="n">h</span><span class="p">};</span>
+<span class="w">            </span><span class="n">task</span><span class="p">.</span><span class="n">promise</span><span class="p">().</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Yielded</span><span class="p">;</span>
+
+<span class="w">            </span><span class="c1">//Store ourselves in the yield list</span>
+<span class="w">            </span><span class="n">task</span><span class="p">.</span><span class="n">promise</span><span class="p">().</span><span class="n">pool</span><span class="p">.</span><span class="n">lock</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">threads</span><span class="p">[</span><span class="n">task</span><span class="p">.</span><span class="n">promise</span><span class="p">().</span><span class="n">threadIdx</span><span class="p">].</span><span class="n">yields</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">await_resume</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">//Mark the task as executing again</span>
+<span class="w">            </span><span class="n">task</span><span class="p">.</span><span class="n">promise</span><span class="p">().</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Status</span><span class="o">::</span><span class="n">Executing</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="o">::</span><span class="n">Task</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Task</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">h</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="o">++</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="o">&amp;</span><span class="w"> </span><span class="n">Task</span><span class="o">::</span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Task</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">h</span><span class="p">;</span>
+<span class="w">            </span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="o">++</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="n">Task</span><span class="o">::~</span><span class="n">Task</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="o">--</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="n">promise</span><span class="p">().</span><span class="n">handleRefCount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">h</span><span class="p">.</span><span class="n">destroy</span><span class="p">();</span>
+<span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">worker</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">stop_token</span><span class="w"> </span><span class="n">stop</span><span class="p">,</span><span class="w"> </span><span class="n">details</span><span class="o">::</span><span class="n">ThreadData</span><span class="o">&amp;</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">while</span><span class="p">(</span><span class="o">!</span><span class="n">stop</span><span class="p">.</span><span class="n">stop_requested</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="c1">//Check the yield list</span>
-<span class="w">            </span><span class="k">for</span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">yptr</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">yields</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="n">yptr</span><span class="o">-&gt;</span><span class="n">predicate</span><span class="p">())</span><span class="w"> </span><span class="n">yptr</span><span class="o">-&gt;</span><span class="n">task</span><span class="p">.</span><span class="n">resume</span><span class="p">();</span>
+<span class="w">            </span><span class="k">for</span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">yields</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">yields</span><span class="p">.</span><span class="n">end</span><span class="p">();)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="n">it</span><span class="o">-&gt;</span><span class="n">predicate</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">it</span><span class="o">-&gt;</span><span class="n">task</span><span class="p">.</span><span class="n">resume</span><span class="p">();</span>
+<span class="w">                    </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">yields</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">it</span><span class="p">);</span>
+<span class="w">                </span><span class="p">}</span><span class="w"> </span><span class="k">else</span>
+<span class="w">                    </span><span class="o">++</span><span class="n">it</span><span class="p">;</span>
 <span class="w">            </span><span class="p">}</span>
 
 <span class="w">            </span><span class="c1">//Check the regular task queue</span>
@@ -877,6 +882,7 @@
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
+
 <span class="p">}</span>
 </pre></div>
 </div>

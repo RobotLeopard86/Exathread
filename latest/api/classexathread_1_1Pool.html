@@ -329,9 +329,6 @@
 <li class="toctree-l1"><a class="reference internal" href="enum_namespaceexathread_1a4013b3ff5c3b756f6d1a0a2d3091cf05.html">Enum Status</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a14e7fa538e6fb2ba7341a21c7510dfbb.html">Function exathread::getCurrentThreadPool</a></li>
-</ul>
-<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ae2a1895a7f1ac9ea556b4bbdf9a8495d.html">Function exathread::worker</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -526,12 +523,20 @@
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Pool8waitIdleEv">
 <span id="_CPPv3N9exathread4Pool8waitIdleEv"></span><span id="_CPPv2N9exathread4Pool8waitIdleEv"></span><span id="exathread::Pool::waitIdle"></span><span class="target" id="classexathread_1_1Pool_1a77bedc363205beeb664f3b68bb0c2dc7"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">waitIdle</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Pool8waitIdleEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Wait until there are no more tasks in the queue (tasks submitted during this call will continue to block it) </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread’s queue was checked </p>
+</div>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Pool6cancelEv">
 <span id="_CPPv3N9exathread4Pool6cancelEv"></span><span id="_CPPv2N9exathread4Pool6cancelEv"></span><span id="exathread::Pool::cancel"></span><span class="target" id="classexathread_1_1Pool_1ab9cdec11b5be0ae06c72be2f35e51ec2"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cancel</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Pool6cancelEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Cancel all currently scheduled tasks. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread’s queue was checked </p>
+</div>
 </dd></dl>
 
 </div>
@@ -550,6 +555,14 @@
 </dd>
 </dl>
 </dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-friends">Friends</p>
+<dl>
+<dt class="sig sig-object cpp">
+<em class="property"><span class="pre">friend</span> <span class="pre">struct</span></em> <span class="pre">details::YieldOp</span></dt>
+</dl>
 
 </div>
 </dd></dl>
