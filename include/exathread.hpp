@@ -49,6 +49,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #include <exception>
 #include <memory>
 #include <ranges>
+#include <stop_token>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -605,8 +606,9 @@ namespace exathread {
 		Pool(std::size_t threadCount);
 
 		static std::size_t totalThreads;
-
 		std::vector<details::ThreadData> threads;
+
+		friend void worker(std::stop_token, details::ThreadData&);
 	};
 
 	/**
@@ -773,6 +775,8 @@ namespace exathread {
 		struct ThreadData {
 			std::jthread thread;
 			std::vector<std::shared_ptr<YieldOp>> yields;
+			std::weak_ptr<Pool> pool;
+			std::size_t curSteal, myIndex;
 			std::array<Task, 2048> ringbuf;
 			alignas(64) std::atomic<uint64_t> frontHead;
 			alignas(64) std::atomic<uint64_t> frontTail;
@@ -834,41 +838,43 @@ namespace exathread {
 	}
 
 	inline Task details::ThreadData::pop() {
-		//Check if empty
-		if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
+		while(true) {
+			//Check if empty
+			if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
 
-		//Reserve slot in ring buffer (CAS)
-		uint64_t fh0 = 0, fh1 = 0;
-		do {
-			//Advance indices
-			fh0 = frontHead.load(std::memory_order_acquire);
-			fh1 = fh0 + 1;
+			//Reserve slot in ring buffer (CAS)
+			uint64_t fh0 = 0, fh1 = 0;
+			do {
+				//Advance indices
+				fh0 = frontHead.load(std::memory_order_acquire);
+				fh1 = fh0 + 1;
 
-			//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
-			if(fh1 < frontTail.load(std::memory_order_acquire)) return pop();
+				//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
+				if(fh1 < frontTail.load(std::memory_order_acquire)) continue;
 
-			//Wrap-around prevention (head can't wrap around past tail)
-			if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) return pop();
+				//Wrap-around prevention (head can't wrap around past tail)
+				if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) continue;
 
-			//Index pass prevention (front can't get ahead of back)
-			if(fh1 > backTail.load(std::memory_order_acquire)) return pop();//throw std::runtime_error("Queue end collision detected!");
-		} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
+				//Index pass prevention (front can't get ahead of back)
+				if(fh1 > backTail.load(std::memory_order_acquire)) continue;
+			} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
 
-		//Read from safe slot
-		Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
+			//Read from safe slot
+			Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
 
-		//Advance tail index when possible
-		uint64_t tailBase = frontTail.load(std::memory_order_relaxed);
-		if(fh1 <= tailBase) return t;
-		while(!frontTail.compare_exchange_strong(tailBase, fh1, std::memory_order_release, std::memory_order_relaxed)) {
-			std::this_thread::yield();
+			//Advance tail index when possible
+			uint64_t tailBase = frontTail.load(std::memory_order_relaxed);
+			if(fh1 <= tailBase) return t;
+			while(!frontTail.compare_exchange_strong(tailBase, fh1, std::memory_order_release, std::memory_order_relaxed)) {
+				std::this_thread::yield();
 
-			//Make sure the tail hasn't passed what we thought it was
-			if(tailBase >= fh1) return t;
+				//Make sure the tail hasn't passed what we thought it was
+				if(tailBase >= fh1) return t;
+			}
+
+			//Return value
+			return t;
 		}
-
-		//Return value
-		return t;
 	}
 
 	inline std::size_t details::ThreadData::queueSize() {
@@ -877,12 +883,12 @@ namespace exathread {
 
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
 		while(!stop.stop_requested()) {
-			//First check the yield list
+			//Check the yield list
 			for(auto yptr : data.yields) {
 				if(yptr->predicate()) yptr->task.resume();
 			}
 
-			//Then check our own queue
+			//Check the regular task queue
 			if(data.queueSize() > 0) {
 				//We have to try/catch here in case a steal happened right before here and the queue has become empty
 				try {
@@ -891,7 +897,23 @@ namespace exathread {
 					t.resume();
 				} catch(...) {}
 			} else {
-				//TODO: Steal
+				//Steal a task from somebody else's queue
+				std::shared_ptr<Pool> p = data.pool.lock();
+				while(true) {
+					//Select a victim
+					while(p->threads[data.curSteal].queueSize() <= 0) {
+						++data.curSteal;
+						if(data.curSteal >= p->threads.size()) data.curSteal = 0;
+						if(data.curSteal == data.myIndex) ++data.curSteal;
+					}
+
+					//Commence thievery
+					try {
+						Task t = p->threads[data.curSteal].pop();
+						t.resume();
+						break;
+					} catch(...) {}
+				}
 			}
 		}
 	}
