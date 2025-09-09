@@ -594,11 +594,15 @@ namespace exathread {
 
 		/**
 		 * @brief Wait until there are no more tasks in the queue (tasks submitted during this call will continue to block it)
+		 *
+		 * @note This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread's queue was checked
 		 */
 		void waitIdle();
 
 		/**
 		 * @brief Cancel all currently scheduled tasks
+		 *
+		 * @note This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread's queue was checked
 		 */
 		void cancel();
 
@@ -609,14 +613,8 @@ namespace exathread {
 		std::vector<details::ThreadData> threads;
 
 		friend void worker(std::stop_token, details::ThreadData&);
+		friend struct details::YieldOp;
 	};
-
-	/**
-	 * @brief Get the pool the current thread belongs to (or nothing if this isn't a worker thread)
-	 *
-	 * @returns An optional containing a pool pointer if the current thread is a worker, or nothing otherwise
-	 */
-	std::optional<std::shared_ptr<Pool>> getCurrentThreadPool();
 
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run for a certain period of time
@@ -689,123 +687,86 @@ namespace exathread {
 //=============== IMPLEMENTATION ===============
 
 namespace exathread {
-	namespace details {
-		struct Promise {
-			std::any val;						  //The stored result value
-			std::exception_ptr exception;		  //The stored result exception (if one is thrown)
-			Status status;						  //The status of the task
-			std::weak_ptr<Pool> pool;			  //The pool of execution
-			std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
-			std::optional<std::vector<Task>> next;//The next task(s) to schedule after the completion of this one
+	struct details::Promise {
+		std::any val;						  //The stored result value
+		std::exception_ptr exception;		  //The stored result exception (if one is thrown)
+		Status status;						  //The status of the task
+		std::weak_ptr<Pool> pool;			  //The pool of execution
+		std::size_t threadIdx;				  //The index of the thread this task is running on
+		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
+		std::optional<std::vector<Task>> next;//The next task(s) to schedule after the completion of this one
 
-			void unhandled_exception() noexcept {
-				exception = std::current_exception();
-			}
-
-			std::suspend_always initial_suspend() noexcept {
-				status = Status::Pending;
-				return {};
-			}
-
-			std::suspend_always final_suspend() noexcept {
-				//Set status
-				status = exception ? Status::Failed : Status::Complete;
-
-				//Schedule continuations if success and pool still okay (double-check)
-				if(!exception && val.has_value() && !pool.expired()) {
-					continuation();
-				}
-
-				return {};
-			}
-
-			virtual Task get_return_object() noexcept {
-				return {};
-			}
-
-		  private:
-			virtual void continuation() {}
-		};
-
-		template<typename T>
-			requires(!std::is_void_v<T>)
-		struct ValuePromise : public Promise {
-			void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
-				val = std::move(value);
-			}
-
-			Task get_return_object() noexcept override {
-				return ValueTask<T> {std::coroutine_handle<details::Promise>::from_promise(*this)};
-			}
-
-			void continuation() override {
-				//TODO
-			}
-		};
-
-		struct VoidPromise : public Promise {
-			void return_void() noexcept {}
-
-			Task get_return_object() noexcept override {
-				return VoidTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
-			}
-
-			void continuation() override {
-				//TODO
-			}
-		};
-
-		struct YieldOp {
-			std::function<bool()> predicate;
-			Task task;
-			bool await_ready() {
-				return predicate();
-			}
-			void await_suspend(std::coroutine_handle<details::Promise> h) {
-				//Get the task and mark it as yielded
-				task = Task {h};
-				task.promise().status = Status::Yielded;
-			}
-			void await_resume() {
-				//Mark the task as executing again
-				task.promise().status = Status::Executing;
-			}
-		};
-
-		struct ThreadData {
-			std::jthread thread;
-			std::vector<std::shared_ptr<YieldOp>> yields;
-			std::weak_ptr<Pool> pool;
-			std::size_t curSteal, myIndex;
-			std::array<Task, 2048> ringbuf;
-			alignas(64) std::atomic<uint64_t> frontHead;
-			alignas(64) std::atomic<uint64_t> frontTail;
-			alignas(64) std::atomic<uint64_t> backHead;
-			alignas(64) std::atomic<uint64_t> backTail;
-			void push(Task&& t);
-			Task pop();
-			std::size_t queueSize();
-		};
-	}
-
-	inline Task::Task(const Task& other) noexcept : h(other.h) {
-		promise().handleRefCount++;
-	}
-
-	inline Task& Task::operator=(const Task& other) noexcept {
-		if(this != &other) {
-			h = other.h;
-			promise().handleRefCount++;
+		void unhandled_exception() noexcept {
+			exception = std::current_exception();
 		}
-		return *this;
-	}
 
-	inline Task::~Task() noexcept {
-		promise().handleRefCount--;
-		if(promise().handleRefCount <= 0) {
-			h.destroy();
+		std::suspend_always initial_suspend() noexcept {
+			status = Status::Pending;
+			return {};
 		}
-	}
+
+		std::suspend_always final_suspend() noexcept {
+			//Set status
+			status = exception ? Status::Failed : Status::Complete;
+
+			//Schedule continuations if success and pool still okay (double-check)
+			if(!exception && val.has_value() && !pool.expired()) {
+				continuation();
+			}
+
+			return {};
+		}
+
+		virtual Task get_return_object() noexcept {
+			return {};
+		}
+
+	  private:
+		virtual void continuation() {}
+	};
+
+	template<typename T>
+		requires(!std::is_void_v<T>)
+	struct details::ValuePromise : public Promise {
+		void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
+			val = std::move(value);
+		}
+
+		Task get_return_object() noexcept override {
+			return ValueTask<T> {std::coroutine_handle<details::Promise>::from_promise(*this)};
+		}
+
+		void continuation() override {
+			//TODO
+		}
+	};
+
+	struct details::VoidPromise : public Promise {
+		void return_void() noexcept {}
+
+		Task get_return_object() noexcept override {
+			return VoidTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
+		}
+
+		void continuation() override {
+			//TODO
+		}
+	};
+
+	struct details::ThreadData {
+		std::jthread thread;
+		std::vector<details::YieldOp> yields;
+		std::weak_ptr<Pool> pool;
+		std::size_t curSteal, myIndex;
+		std::array<Task, 2048> ringbuf;
+		alignas(64) std::atomic<uint64_t> frontHead;
+		alignas(64) std::atomic<uint64_t> frontTail;
+		alignas(64) std::atomic<uint64_t> backHead;
+		alignas(64) std::atomic<uint64_t> backTail;
+		void push(Task&& t);
+		Task pop();
+		std::size_t queueSize();
+	};
 
 	inline void details::ThreadData::push(Task&& t) {
 		//Reserve slot in ring buffer (CAS)
@@ -881,11 +842,54 @@ namespace exathread {
 		return backTail.load(std::memory_order_acquire) - frontTail.load(std::memory_order_acquire);
 	}
 
+	struct details::YieldOp {
+		std::function<bool()> predicate;
+		Task task;
+		bool await_ready() {
+			return predicate();
+		}
+		void await_suspend(std::coroutine_handle<details::Promise> h) {
+			//Get the task and mark it as yielded
+			task = Task {h};
+			task.promise().status = Status::Yielded;
+
+			//Store ourselves in the yield list
+			task.promise().pool.lock()->threads[task.promise().threadIdx].yields.push_back(*this);
+		}
+		void await_resume() {
+			//Mark the task as executing again
+			task.promise().status = Status::Executing;
+		}
+	};
+
+	inline Task::Task(const Task& other) noexcept : h(other.h) {
+		promise().handleRefCount++;
+	}
+
+	inline Task& Task::operator=(const Task& other) noexcept {
+		if(this != &other) {
+			h = other.h;
+			promise().handleRefCount++;
+		}
+		return *this;
+	}
+
+	inline Task::~Task() noexcept {
+		promise().handleRefCount--;
+		if(promise().handleRefCount <= 0) {
+			h.destroy();
+		}
+	}
+
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
 		while(!stop.stop_requested()) {
 			//Check the yield list
-			for(auto yptr : data.yields) {
-				if(yptr->predicate()) yptr->task.resume();
+			for(auto it = data.yields.begin(); it != data.yields.end();) {
+				if(it->predicate()) {
+					it->task.resume();
+					it = data.yields.erase(it);
+				} else
+					++it;
 			}
 
 			//Check the regular task queue
@@ -917,4 +921,5 @@ namespace exathread {
 			}
 		}
 	}
+
 }
