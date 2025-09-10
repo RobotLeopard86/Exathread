@@ -55,7 +55,7 @@
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Template Function exathread::yieldUntilComplete(MultiFuture&lt;T&gt;)" href="function_namespaceexathread_1a0b98420b646ccfd224af5349f7dc680b.html" />
-    <link rel="prev" title="Template Function exathread::yieldUntil" href="function_namespaceexathread_1a3dbe6d4c92f4c1e6e94fff96cf1f92df.html" />
+    <link rel="prev" title="Function exathread::yieldUntil" href="function_namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="latest" />
@@ -335,7 +335,7 @@
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html">Template Function exathread::yieldFor</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a3dbe6d4c92f4c1e6e94fff96cf1f92df.html">Template Function exathread::yieldUntil</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0.html">Function exathread::yieldUntil</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)</a></li>
@@ -409,24 +409,18 @@
 <h2>Function Documentation<a class="headerlink" href="#function-documentation" title="Link to this heading"><span/></a></h2>
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4I0EN9exathread18yieldUntilCompleteEN7details7YieldOpE6FutureI1TE">
-<span id="_CPPv3I0EN9exathread18yieldUntilCompleteE6FutureI1TE"></span><span id="_CPPv2I0EN9exathread18yieldUntilCompleteE6FutureI1TE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="namespaceexathread_1aac2e67e8ba092bccac27d7666e711e40"></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">YieldOp</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">exathread</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">yieldUntilComplete</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread18yieldUntilCompleteEN7details7YieldOpE6FutureI1TE" title="exathread::yieldUntilComplete::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">future</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN9exathread18yieldUntilCompleteEN7details7YieldOpE6FutureI1TE" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3I0EN9exathread18yieldUntilCompleteE6FutureI1TE"></span><span id="_CPPv2I0EN9exathread18yieldUntilCompleteE6FutureI1TE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="namespaceexathread_1aac2e67e8ba092bccac27d7666e711e40"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">YieldOp</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">exathread</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">yieldUntilComplete</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread18yieldUntilCompleteEN7details7YieldOpE6FutureI1TE" title="exathread::yieldUntilComplete::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">future</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN9exathread18yieldUntilCompleteEN7details7YieldOpE6FutureI1TE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Suspend execution of your task and allow other tasks to run until a future resolves. </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>As the use of this function makes your function a coroutine, it must explicitly return a <a class="reference internal" href="classexathread_1_1Task.html#classexathread_1_1Task"><span class="std std-ref">Task</span></a> and use <code class="docutils literal notranslate"><span class="pre">co_return</span></code> to be valid </p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><p>If the submitted future is cancelled during the yield, the task state will be destroyed and execution will not resume.</p>
-<p>Manually-allocated memory will not be freed. Consider using smart pointers to avoid this.</p>
-</p>
+<p>As the use of this function makes your function a coroutine, it must explicitly return either a <a class="reference internal" href="classexathread_1_1VoidTask.html#classexathread_1_1VoidTask"><span class="std std-ref">VoidTask</span></a> or <a class="reference internal" href="classexathread_1_1ValueTask.html#classexathread_1_1ValueTask"><span class="std std-ref">ValueTask</span></a> and use <code class="docutils literal notranslate"><span class="pre">co_return</span></code> to be valid</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>future</strong> – The future of which to yield until completion. It is not guaranteed that execution will resume exactly when the future becomes complete.</p>
 </dd>
 <dt class="field-even">Throws<span class="colon">:</span></dt>
-<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the specified future has already been completed or cancelled </p>
+<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the specified future has already been completed </p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>An awaitable object; you must use <code class="docutils literal notranslate"><span class="pre">co_await</span></code> on this result to yield correctly</p>
@@ -448,12 +442,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="function_namespaceexathread_1a3dbe6d4c92f4c1e6e94fff96cf1f92df.html"
+       href="function_namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Template Function exathread::yieldUntil</p>
+        <p class="prev-next-title">Function exathread::yieldUntil</p>
       </div>
     </a>
     <a class="right-next"
