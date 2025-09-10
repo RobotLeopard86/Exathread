@@ -69,7 +69,6 @@ namespace exathread {
 	enum class Status {
 		Pending,  ///<The task has not yet been scheduled for execution
 		Scheduled,///<The task has been scheduled for execution but has not begun
-		Cancelled,///<Execution of the task was cancelled
 		Executing,///<The task is currently executing
 		Yielded,  ///<The task has yielded temporarily
 		Failed,	  ///<The task completed with an exception
@@ -227,9 +226,7 @@ namespace exathread {
 	class Future {
 	  public:
 		/**
-		 * @brief Block until execution had completed
-		 *
-		 * @throws std::runtime_error If the future is cancelled during this operation
+		 * @brief Block until execution has completed, successfully or not
 		 */
 		void await();
 
@@ -241,13 +238,6 @@ namespace exathread {
 		Status checkStatus() const noexcept;
 
 		/**
-		 * @brief Cancel the future if it has not yet been executed
-		 *
-		 * This function does nothing if the future has already begun execution, been cancelled, or completed.
-		 */
-		void cancel() noexcept;
-
-		/**
 		 * @brief Schedule a tracked task for execution after this future
 		 *
 		 * @tparam F Function type
@@ -257,7 +247,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, ExArgs&&...>>
@@ -273,7 +263,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs>
@@ -292,7 +282,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
@@ -310,7 +300,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
@@ -324,7 +314,6 @@ namespace exathread {
 		 *
 		 * @return The result of the task
 		 *
-		 * @throws std::runtime_error If the future is cancelled during this operation
 		 * @throws The exception thrown by the task if failed
 		 */
 		template<typename U = T>
@@ -337,7 +326,6 @@ namespace exathread {
 		 *
 		 * @return The result of the task
 		 *
-		 * @throws std::runtime_error If the future is cancelled during this operation
 		 * @throws The exception thrown by the task if failed
 		 */
 		template<typename U = T>
@@ -350,7 +338,6 @@ namespace exathread {
 		 *
 		 * @return The result of the task
 		 *
-		 * @throws std::runtime_error If the future is cancelled during this operation
 		 * @throws The exception thrown by the task if failed
 		 */
 		template<typename U = T>
@@ -392,26 +379,17 @@ namespace exathread {
 
 		/**
 		 * @brief Block until all futures have completed execution
-		 *
-		 * @throws std::runtime_error If any future is cancelled during this operation
 		 */
 		void await();
 
 		/**
 		 * @brief Get the overall status of the collection
 		 *
-		 * @details The status progresses as follows: starting at Scheduled, once a future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Cancelled if a future is cancelled and likewise for Failed. The Yielding status is never returned.
+		 * @details The status progresses as follows: starting at Scheduled, once a future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Failed if any future fails. The Yielding status is never returned.
 		 *
 		 * @returns The overall status
 		 */
 		Status checkStatus() const noexcept;
-
-		/**
-		 * @brief Cancel all futures that have not yet been executed
-		 *
-		 * This function does nothing to futures that have already begun execution, been cancelled, or completed.
-		 */
-		void cancel() noexcept;
 
 		/**
 		 * @brief Get the pool that the futures exist on
@@ -430,7 +408,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has already been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
@@ -446,7 +424,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has already been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs>
@@ -465,7 +443,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>>
@@ -483,7 +461,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed or cancelled
+		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
@@ -495,7 +473,6 @@ namespace exathread {
 		 *
 		 * @returns A list of results corresponding to the order of futures as placed in the constructor
 		 *
-		 * @throws std::runtime_error If any future is cancelled during this operation
 		 * @throws std::runtime_error If any of the futures failed
 		 */
 		std::vector<T> results();
@@ -599,13 +576,6 @@ namespace exathread {
 		 */
 		void waitIdle();
 
-		/**
-		 * @brief Cancel all currently scheduled tasks
-		 *
-		 * @note This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread's queue was checked
-		 */
-		void cancel();
-
 	  private:
 		Pool(std::size_t threadCount);
 
@@ -619,7 +589,7 @@ namespace exathread {
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run for a certain period of time
 	 *
-	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return either a VoidTask or ValueTask and use @c co_return to be valid
 	 *
 	 * @param duration The amount of time to yield for. It is not guaranteed that execution will resume exactly at the specified time amount
 	 *
@@ -631,7 +601,7 @@ namespace exathread {
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until a certain point in time
 	 *
-	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return either a VoidTask or ValueTask and use @c co_return to be valid
 	 *
 	 * @param time The point in time until which to yield. It is not guaranteed that execution will resume exactly at the specified time point
 	 *
@@ -639,13 +609,12 @@ namespace exathread {
 	 *
 	 * @throws std::logic_error If the specified time point is in the past
 	 */
-	template<typename Rep, typename Period>
 	[[nodiscard]] details::YieldOp yieldUntil(std::chrono::steady_clock::time_point time);
 
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until a certain condition is met
 	 *
-	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return either a VoidTask or ValueTask and use @c co_return to be valid
 	 *
 	 * @param predicate A function that will evaluate the condition to determine if execution should resume. It should not have side effects.
 	 *
@@ -656,14 +625,13 @@ namespace exathread {
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until a future resolves
 	 *
-	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
-	 * @warning If the submitted future is cancelled during the yield, the task state will be destroyed and execution will not resume.\n Manually-allocated memory will not be freed. Consider using smart pointers to avoid this.
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return either a VoidTask or ValueTask and use @c co_return to be valid
 	 *
 	 * @param future The future of which to yield until completion. It is not guaranteed that execution will resume exactly when the future becomes complete.
 	 *
 	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
 	 *
-	 * @throws std::logic_error If the specified future has already been completed or cancelled
+	 * @throws std::logic_error If the specified future has already been completed
 	 */
 	template<typename T>
 	[[nodiscard]] details::YieldOp yieldUntilComplete(Future<T> future);
@@ -671,14 +639,13 @@ namespace exathread {
 	/**
 	 * @brief Suspend execution of your task and allow other tasks to run until futures resolve
 	 *
-	 * @note As the use of this function makes your function a coroutine, it must explicitly return a Task and use @c co_return to be valid
-	 * @warning If any of the submitted futures are cancelled during the yield, the task state will be destroyed and execution will not resume.\n Manually-allocated memory (for example, raw @c new or @c malloc) will not be freed. Consider using smart pointers to avoid this.
+	 * @note As the use of this function makes your function a coroutine, it must explicitly return either a VoidTask or ValueTask and use @c co_return to be valid
 	 *
 	 * @param futures The futures of which to yield until completion. It is not guaranteed that execution will resume exactly when the futures become complete.
 	 *
 	 * @return An awaitable object; you must use @c co_await on this result to yield correctly
 	 *
-	 * @throws std::logic_error If the specified futures have already been completed or cancelled
+	 * @throws std::logic_error If the specified futures have already been completed
 	 */
 	template<typename T>
 	[[nodiscard]] details::YieldOp yieldUntilComplete(MultiFuture<T> futures);
@@ -752,6 +719,25 @@ namespace exathread {
 			//TODO
 		}
 	};
+
+	inline Task::Task(const Task& other) noexcept : h(other.h) {
+		promise().handleRefCount++;
+	}
+
+	inline Task& Task::operator=(const Task& other) noexcept {
+		if(this != &other) {
+			h = other.h;
+			promise().handleRefCount++;
+		}
+		return *this;
+	}
+
+	inline Task::~Task() noexcept {
+		promise().handleRefCount--;
+		if(promise().handleRefCount <= 0) {
+			h.destroy();
+		}
+	}
 
 	struct details::ThreadData {
 		std::jthread thread;
@@ -862,23 +848,39 @@ namespace exathread {
 		}
 	};
 
-	inline Task::Task(const Task& other) noexcept : h(other.h) {
-		promise().handleRefCount++;
+	inline details::YieldOp yieldUntilTrue(std::function<bool()> predicate) {
+		details::YieldOp yld;
+		yld.predicate = predicate;
+		return yld;
 	}
 
-	inline Task& Task::operator=(const Task& other) noexcept {
-		if(this != &other) {
-			h = other.h;
-			promise().handleRefCount++;
-		}
-		return *this;
+	template<typename Rep, typename Period>
+	inline details::YieldOp yieldFor(const std::chrono::duration<Rep, Period>& duration) {
+		details::YieldOp yld;
+		std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+		yld.predicate = [now, duration]() { return std::chrono::steady_clock::now() - now >= duration; };
+		return yld;
 	}
 
-	inline Task::~Task() noexcept {
-		promise().handleRefCount--;
-		if(promise().handleRefCount <= 0) {
-			h.destroy();
-		}
+	inline details::YieldOp yieldUntil(std::chrono::steady_clock::time_point time) {
+		details::YieldOp yld;
+		if(time <= std::chrono::steady_clock::now()) throw std::logic_error("Cannot yield until a time in the past!");
+		yld.predicate = [time]() { return std::chrono::steady_clock::now() >= time; };
+		return yld;
+	}
+
+	template<typename T>
+	inline details::YieldOp yieldUntilComplete(Future<T> future) {
+		details::YieldOp yld;
+		yld.predicate = [future]() { auto s = future.checkStatus(); return s == Status::Complete || s == Status::Failed; };
+		return yld;
+	}
+
+	template<typename T>
+	inline details::YieldOp yieldUntilComplete(MultiFuture<T> future) {
+		details::YieldOp yld;
+		yld.predicate = [future]() { auto s = future.checkStatus(); return s == Status::Complete || s == Status::Failed; };
+		return yld;
 	}
 
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
