@@ -924,4 +924,54 @@ namespace exathread {
 		}
 	}
 
+	template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
+	auto corowrap(F&& f) {
+		//Set up shared data for late-binding arguments
+		struct SharedData {
+			std::tuple<std::decay_t<Args>...> args;
+		};
+		std::shared_ptr<SharedData> share = std::make_shared<SharedData>();
+
+		//Construct argument binder function
+		const auto bindArgs = [share](Args... args) {
+			share->args = decltype(share->args)(std::forward<Args>(args)...);
+		};
+
+		//Actual function wrapping
+
+		//Is this a coroutine (of a recognized type) already?
+		if constexpr(std::is_base_of_v<R, Task>) {
+			const auto wrap = [share, fn = std::forward<F>(f)]() {
+				//Create and start the real task function
+				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
+				R inner = std::apply(fn, std::move(share->args));
+				inner.resume();
+
+				//Await and return logic
+				if constexpr(std::is_same_v<R, VoidTask>) {
+					co_await inner;
+					co_return;
+				} else {
+					co_return co_await inner;
+				}
+			};
+			return std::make_pair<R, decltype(bindArgs)>(wrap(), std::move(bindArgs));
+		} else {
+			//Void or not?
+			if constexpr(std::is_void_v<R>) {
+				const auto wrap = [share, fn = std::forward<F>(f)]() -> VoidTask {
+					//Run the function
+					std::apply(fn, std::move(share->args));
+					co_return;
+				};
+				return std::make_pair<VoidTask, decltype(bindArgs)>(wrap(), std::move(bindArgs));
+			} else {
+				const auto wrap = [share, fn = std::forward<F>(f)]() -> ValueTask<R> {
+					//Run the function
+					co_return std::apply(fn, std::move(share->args));
+				};
+				return std::make_pair<ValueTask<R>, decltype(bindArgs)>(wrap(), std::move(bindArgs));
+			}
+		}
+	}
 }
