@@ -42,7 +42,6 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 
 #pragma once
 
-#include <any>
 #include <atomic>
 #include <coroutine>
 #include <cstddef>
@@ -125,14 +124,7 @@ namespace exathread {
 		/**
 		 * @brief Move assignment
 		 */
-		Task& operator=(Task&& other) noexcept {
-			if(this != &other) {
-				//Destroy coroutine state before swap
-				if(h) h.destroy();
-				h = std::exchange(other.h, {});
-			}
-			return *this;
-		}
+		Task& operator=(Task&& other) noexcept;
 
 		~Task() noexcept;
 
@@ -318,8 +310,7 @@ namespace exathread {
 		 *
 		 * @throws The exception thrown by the task if failed
 		 */
-		template<typename U = T>
-		std::enable_if_t<!std::is_void_v<U>, U&> operator*();
+		std::enable_if_t<!std::is_void_v<T>, T&> operator*();
 
 		/**
 		 * @brief Obtain the task result, blocking if not complete
@@ -330,8 +321,7 @@ namespace exathread {
 		 *
 		 * @throws The exception thrown by the task if failed
 		 */
-		template<typename U = T>
-		std::enable_if_t<!std::is_void_v<U>, const U&> operator*() const;
+		std::enable_if_t<!std::is_void_v<T>, const T&> operator*() const;
 
 		/**
 		 * @brief Obtain the task result, blocking if not complete
@@ -342,8 +332,7 @@ namespace exathread {
 		 *
 		 * @throws The exception thrown by the task if failed
 		 */
-		template<typename U = T>
-		std::enable_if_t<!std::is_void_v<U>, U*> operator->();
+		std::enable_if_t<!std::is_void_v<T>, T*> operator->();
 
 		//Move only
 		///@cond
@@ -470,11 +459,13 @@ namespace exathread {
 		/**
 		 * @brief Get the results of the futures, blocking if not complete
 		 *
+		 * This function does not exist in the @c void specialization of this type
+		 *
 		 * @returns A list of results corresponding to the order of futures as placed in the constructor
 		 *
 		 * @throws std::runtime_error If any of the futures failed
 		 */
-		std::vector<T> results();
+		std::enable_if_t<!std::is_void_v<T>, std::vector<T>> results();
 
 	  private:
 		std::vector<Future<T>> futures;
@@ -585,6 +576,10 @@ namespace exathread {
 
 		friend void worker(std::stop_token, details::ThreadData&);
 		friend struct details::YieldOp;
+		friend struct details::VoidPromise;
+		template<typename U>
+			requires(!std::is_void_v<U>)
+		friend struct details::ValuePromise;
 
 		void internalTaskEnqueue(Task t);
 		void internalBatchEnqueue(std::vector<Task> b);
@@ -705,6 +700,7 @@ namespace exathread {
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
 			for(Task& t : next) {
+				//TODO
 			}
 		}
 	};
@@ -723,7 +719,10 @@ namespace exathread {
 		}
 
 		void continuation() override {
-			//TODO
+			std::shared_ptr<Pool> p = pool.lock();
+			for(Task& t : next) {
+				//TODO
+			}
 		}
 	};
 
@@ -739,9 +738,15 @@ namespace exathread {
 		return *this;
 	}
 
+	inline Task& Task::operator=(Task&& other) noexcept {
+		if(this != &other) {
+			h = std::exchange(other.h, {});
+		}
+		return *this;
+	}
+
 	inline Task::~Task() noexcept {
-		promise().handleRefCount--;
-		if(promise().handleRefCount <= 0) {
+		if(promise().handleRefCount-- <= 0) {
 			h.destroy();
 		}
 	}
@@ -890,6 +895,41 @@ namespace exathread {
 		return yld;
 	}
 
+	template<typename T>
+	void Future<T>::await() {
+		Status s = checkStatus();
+		while(s != Status::Complete && s != Status::Failed) {
+			std::this_thread::yield();
+			s = checkStatus();
+		}
+	}
+
+	template<typename T>
+	Status Future<T>::checkStatus() const noexcept {
+		return task.promise().status;
+	}
+
+	template<typename T>
+	std::enable_if_t<!std::is_void_v<T>, T&> Future<T>::operator*() {
+		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
+		if(vp.exception) std::rethrow_exception(vp.exception);
+		return vp.val.value();
+	}
+
+	template<typename T>
+	std::enable_if_t<!std::is_void_v<T>, const T&> Future<T>::operator*() const {
+		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
+		if(vp.exception) std::rethrow_exception(vp.exception);
+		return vp.val.value();
+	}
+
+	template<typename T>
+	std::enable_if_t<!std::is_void_v<T>, T*> Future<T>::operator->() {
+		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
+		if(vp.exception) std::rethrow_exception(vp.exception);
+		return vp.val.value();
+	}
+
 	inline void worker(std::stop_token stop, details::ThreadData& data) {
 		while(!stop.stop_requested()) {
 			//Check the yield list
@@ -981,4 +1021,6 @@ namespace exathread {
 			}
 		}
 	}
+
+
 }
