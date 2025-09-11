@@ -273,9 +273,10 @@ namespace exathread {
 		/**
 		 * @brief Schedule a tracked batch job based on a container for execution after this future
 		 *
-		 * @tparam Rn Input range type
+		 * @tparam Rn Source data container type
+		 * @tparam I Type of elements in container
 		 * @tparam F Function type
-		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam ExArgs Extra arguments to the function
 		 * @tparam R Function return type
 		 *
 		 * @param src The source range to iterate over
@@ -285,16 +286,17 @@ namespace exathread {
 		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
-			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...>
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, T&&, const I&, ExArgs&&...>>
+			requires std::invocable<F&&, const T&&, I&, ExArgs&&...>
 		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after this future with no result
 		 *
-		 * @tparam Rn Input range type
+		 * @tparam Rn Source data container type
+		 * @tparam I Type of elements in container
 		 * @tparam F Function type
-		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam ExArgs Extra arguments to the function
 		 *
 		 * @param src The source range to iterate over
 		 * @param func The function to invoke
@@ -303,8 +305,8 @@ namespace exathread {
 		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
-			requires std::invocable<F&&, T&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T&&, Rn&&, ExArgs&&...>>
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
+			requires std::invocable<F&&, const T&&, I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&&, I&, ExArgs&&...>>
 		void thenBatchDetached(Rn&& src, F func, ExArgs... exargs);
 
 		/**
@@ -434,9 +436,8 @@ namespace exathread {
 		/**
 		 * @brief Schedule a tracked batch job based on a container for execution after these futures
 		 *
-		 * @tparam Rn Input range type
 		 * @tparam F Function type
-		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam ExArgs Extra arguments to the function
 		 * @tparam R Function return type
 		 *
 		 * @param src The source range to iterate over
@@ -446,27 +447,25 @@ namespace exathread {
 		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>>
-			requires std::invocable<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
+		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const T&, ExArgs&&...>>
+			requires std::invocable<F&&, const T&, ExArgs&&...>
+		[[nodiscard]] MultiFuture<R> thenBatch(F func, ExArgs... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after these futures with no result
 		 *
-		 * @tparam Rn Input range type
 		 * @tparam F Function type
-		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam ExArgs Extra arguments to the function
 		 *
-		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
 		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
-			requires std::invocable<F&&, std::vector<T>&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>&&, Rn&&, ExArgs&&...>>
-		void thenBatchDetached(Rn&& src, F func, ExArgs... exargs);
+		template<typename F, typename... ExArgs>
+			requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
+		void thenBatchDetached(F func, ExArgs... exargs);
 
 		/**
 		 * @brief Get the results of the futures, blocking if not complete
@@ -534,33 +533,35 @@ namespace exathread {
 		/**
 		 * @brief Submit a tracked batch job based on a container into the pool
 		 *
-		 * @tparam Rn Input range type
+		 * @tparam Rn Source data container type
+		 * @tparam I Type of elements in container
 		 * @tparam F Function type
-		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam ExArgs Extra arguments to the function
 		 * @tparam R Function return type
 		 *
 		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, Rn&&, ExArgs&&...>>
-			requires std::invocable<F&&, Rn&&, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> batch(Rn&& src, F func, ExArgs... exargs);
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, const I&, ExArgs&&...>>
+			requires std::invocable<F&&, const I&, ExArgs&&...>
+		[[nodiscard]] MultiFuture<R> batch(const Rn& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Submit a batch job based on a container into the pool with no result
 		 *
-		 * @tparam Rn Input range type
+		 * @tparam Rn Source data container type
+		 * @tparam I Type of elements in container
 		 * @tparam F Function type
-		 * @tparam ExArgs Extra rguments to the function
+		 * @tparam ExArgs Extra arguments to the function
 		 *
 		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs>
-			requires std::invocable<F&&, Rn&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, Rn&&, ExArgs&&...>>
-		void batchDetached(Rn&& src, F func, ExArgs... exargs);
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
+			requires std::invocable<F&&, const I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const I&, ExArgs&&...>>
+		void batchDetached(const Rn& src, F func, ExArgs... exargs);
 
 		/**
 		 * @brief Get the number of worker threads managed the pool
@@ -584,6 +585,9 @@ namespace exathread {
 
 		friend void worker(std::stop_token, details::ThreadData&);
 		friend struct details::YieldOp;
+
+		void internalTaskEnqueue(Task t);
+		void internalBatchEnqueue(std::vector<Task> b);
 	};
 
 	/**
@@ -655,13 +659,12 @@ namespace exathread {
 
 namespace exathread {
 	struct details::Promise {
-		std::any val;						  //The stored result value
-		std::exception_ptr exception;		  //The stored result exception (if one is thrown)
-		Status status;						  //The status of the task
-		std::weak_ptr<Pool> pool;			  //The pool of execution
-		std::size_t threadIdx;				  //The index of the thread this task is running on
-		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
-		std::optional<std::vector<Task>> next;//The next task(s) to schedule after the completion of this one
+		std::exception_ptr exception;	//The stored result exception (if one is thrown)
+		Status status;					//The status of the task
+		std::weak_ptr<Pool> pool;		//The pool of execution
+		std::size_t threadIdx;			//The index of the thread this task is running on
+		std::atomic_uint handleRefCount;//Reference count for how many tasks maintain the coroutine handle
+		std::vector<Task> next;			//The next task(s) to schedule after the completion of this one
 
 		void unhandled_exception() noexcept {
 			exception = std::current_exception();
@@ -677,7 +680,7 @@ namespace exathread {
 			status = exception ? Status::Failed : Status::Complete;
 
 			//Schedule continuations if success and pool still okay (double-check)
-			if(!exception && val.has_value() && !pool.expired()) {
+			if(!exception && !pool.expired()) {
 				continuation();
 			}
 
@@ -692,27 +695,31 @@ namespace exathread {
 		virtual void continuation() {}
 	};
 
+	struct details::VoidPromise : public Promise {
+		void return_void() noexcept {}
+
+		Task get_return_object() noexcept override {
+			return VoidTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
+		}
+
+		void continuation() override {
+			std::shared_ptr<Pool> p = pool.lock();
+			for(Task& t : next) {
+			}
+		}
+	};
+
 	template<typename T>
 		requires(!std::is_void_v<T>)
 	struct details::ValuePromise : public Promise {
+		std::optional<T> val;
+
 		void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
 			val = std::move(value);
 		}
 
 		Task get_return_object() noexcept override {
 			return ValueTask<T> {std::coroutine_handle<details::Promise>::from_promise(*this)};
-		}
-
-		void continuation() override {
-			//TODO
-		}
-	};
-
-	struct details::VoidPromise : public Promise {
-		void return_void() noexcept {}
-
-		Task get_return_object() noexcept override {
-			return VoidTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
 		}
 
 		void continuation() override {
