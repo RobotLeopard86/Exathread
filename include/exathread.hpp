@@ -42,6 +42,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 
 #pragma once
 
+#include <any>
 #include <atomic>
 #include <coroutine>
 #include <cstddef>
@@ -84,6 +85,8 @@ namespace exathread {
 		struct ValuePromise;
 		struct YieldOp;
 		struct ThreadData;
+		template<typename... Args>
+		struct ArgsHolder;
 	}
 	///@endcond
 
@@ -243,8 +246,8 @@ namespace exathread {
 		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T&&, ExArgs&&...>>
-			requires std::invocable<F&&, T&&, ExArgs&&...>
+		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const T&, ExArgs&&...>>
+			requires std::invocable<F&&, const T&, ExArgs&&...>
 		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
 
 		/**
@@ -260,7 +263,7 @@ namespace exathread {
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, T&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T&&, ExArgs&&...>>
+			requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
 		void thenDetached(F func, ExArgs... exargs);
 
 		/**
@@ -279,7 +282,7 @@ namespace exathread {
 		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, T&&, const I&, ExArgs&&...>>
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, const T&, const I&, ExArgs&&...>>
 			requires std::invocable<F&&, const T&&, I&, ExArgs&&...>
 		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
 
@@ -396,8 +399,8 @@ namespace exathread {
 		 * @throws std::logic_error If the future has already been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
-			requires std::invocable<F&&, std::vector<T>&&, ExArgs&&...>
+		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const std::vector<T>&, ExArgs&&...>>
+			requires std::invocable<F&&, const std::vector<T>&, ExArgs&&...>
 		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
 
 		/**
@@ -413,7 +416,7 @@ namespace exathread {
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, std::vector<T>&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>&&, ExArgs&&...>>
+			requires std::invocable<F&&, const std::vector<T>&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const std::vector<T>&, ExArgs&&...>>
 		void thenDetached(F func, ExArgs... exargs);
 
 		/**
@@ -650,12 +653,13 @@ namespace exathread {
 
 namespace exathread {
 	struct details::Promise {
-		std::exception_ptr exception;		//The stored result exception (if one is thrown)
-		Status status;						//The status of the task
-		std::weak_ptr<Pool> pool;			//The pool of execution
-		std::size_t threadIdx;				//The index of the thread this task is running on
-		std::atomic_uint handleRefCount;	//Reference count for how many tasks maintain the coroutine handle
-		std::vector<std::vector<Task>> next;//The next task(s) to schedule after the completion of this one
+		std::exception_ptr exception;		  //The stored result exception (if one is thrown)
+		Status status;						  //The status of the task
+		std::weak_ptr<Pool> pool;			  //The pool of execution
+		std::size_t threadIdx;				  //The index of the thread this task is running on
+		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
+		std::vector<std::vector<Task>> next;  //The next task(s) to schedule after the completion of this one
+		std::function<void(std::any)> arg1Set;//The setter for the first argument (used for late-binding for continuations)
 
 		void unhandled_exception() noexcept {
 			exception = std::current_exception();
@@ -695,7 +699,7 @@ namespace exathread {
 
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
-			for(const auto& t : next) {
+			for(const std::vector<Task>& t : next) {
 				if(t.size() == 1) {
 					p->internalTaskEnqueue(t[0]);
 				} else {
@@ -720,10 +724,14 @@ namespace exathread {
 
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
-			for(const auto& t : next) {
+			for(std::vector<Task>& t : next) {
 				if(t.size() == 1) {
+					t[0].promise().arg1Set(val.value());
 					p->internalTaskEnqueue(t[0]);
 				} else {
+					for(Task& task : t) {
+						task.promise().arg1Set(val.value());
+					}
 					p->internalBatchEnqueue(t);
 				}
 			}
@@ -1069,27 +1077,33 @@ namespace exathread {
 		}
 	}
 
-	template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
-	auto corowrap(F&& f) {
-		//Set up shared data for late-binding arguments
-		struct SharedData {
-			std::tuple<std::decay_t<Args>...> args;
-		};
-		std::shared_ptr<SharedData> share = std::make_shared<SharedData>();
+	template<typename... Args>
+	struct details::ArgsHolder {
+		std::tuple<std::decay_t<Args>...> args;
+	};
 
-		//Construct argument binder function
-		const auto bindArgs = [share](Args... args) {
-			share->args = decltype(share->args)(std::forward<Args>(args)...);
+	template<typename F, typename Arg1, typename... Args, typename R = std::invoke_result_t<F&&, Arg1, Args&&...>>
+		requires(!std::is_void_v<Arg1>)
+	auto corowrap(F&& f, Args&&... baseArgs) {
+		//Set up argument holder
+		std::shared_ptr<details::ArgsHolder<Arg1, Args...>> args = std::make_shared<details::ArgsHolder<Arg1, Args...>>();
+		args->args = std::tuple<std::decay_t<Arg1>, std::decay_t<Args>...>();
+		std::get<Args...>(args->args) = std::move(baseArgs...);
+
+		//Set up first argument setter
+		const auto setArg1 = [args](std::any val) {
+			Arg1 a1 = std::any_cast<Arg1>(val);
+			std::get<Arg1>(args->args) = std::move(a1);
 		};
 
 		//Actual function wrapping
 
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
-			const auto wrap = [share, fn = std::forward<F>(f)]() {
+			const auto wrap = [args, fn = std::forward<F>(f)]() {
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = std::apply(fn, std::move(share->args));
+				R inner = std::apply(fn, std::move(args->args));
 				inner.resume();
 
 				//Await and return logic
@@ -1100,22 +1114,72 @@ namespace exathread {
 					co_return co_await inner;
 				}
 			};
-			return std::make_pair<R, decltype(bindArgs)>(wrap(), std::move(bindArgs));
+			return std::make_pair<R, decltype(setArg1)>(wrap(), std::move(setArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [share, fn = std::forward<F>(f)]() -> VoidTask {
+				const auto wrap = [args, fn = std::forward<F>(f)]() -> VoidTask {
 					//Run the function
-					std::apply(fn, std::move(share->args));
+					std::apply(fn, std::move(args->args));
 					co_return;
 				};
-				return std::make_pair<VoidTask, decltype(bindArgs)>(wrap(), std::move(bindArgs));
+				return std::make_pair<VoidTask, decltype(setArg1)>(wrap(), std::move(setArg1));
 			} else {
-				const auto wrap = [share, fn = std::forward<F>(f)]() -> ValueTask<R> {
+				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
 					//Run the function
-					co_return std::apply(fn, std::move(share->args));
+					co_return std::apply(fn, std::move(args->args));
 				};
-				return std::make_pair<ValueTask<R>, decltype(bindArgs)>(wrap(), std::move(bindArgs));
+				return std::make_pair<ValueTask<R>, decltype(setArg1)>(wrap(), std::move(setArg1));
+			}
+		}
+	}
+
+	template<typename F, typename Arg1 = void, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
+		requires std::is_void_v<Arg1>
+	auto corowrap(F&& f, Args&&... baseArgs) {
+		//Set up argument holder
+		std::shared_ptr<details::ArgsHolder<Args...>> args = std::make_shared<details::ArgsHolder<Args...>>();
+		args->args = std::tuple<std::decay_t<Args>...>(baseArgs...);
+
+		//Make a fake first argument setter
+		const auto fakeSetArg1 = [args](std::any) {
+			throw std::runtime_error("no");
+		};
+
+		//Actual function wrapping
+
+		//Is this a coroutine (of a recognized type) already?
+		if constexpr(std::is_base_of_v<R, Task>) {
+			const auto wrap = [args, fn = std::forward<F>(f)]() {
+				//Create and start the real task function
+				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
+				R inner = std::apply(fn, std::move(args->args));
+				inner.resume();
+
+				//Await and return logic
+				if constexpr(std::is_same_v<R, VoidTask>) {
+					co_await inner;
+					co_return;
+				} else {
+					co_return co_await inner;
+				}
+			};
+			return std::make_pair<R, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
+		} else {
+			//Void or not?
+			if constexpr(std::is_void_v<R>) {
+				const auto wrap = [args, fn = std::forward<F>(f)]() -> VoidTask {
+					//Run the function
+					std::apply(fn, std::move(args->args));
+					co_return;
+				};
+				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
+			} else {
+				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
+					//Run the function
+					co_return std::apply(fn, std::move(args->args));
+				};
+				return std::make_pair<ValueTask<R>, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
 			}
 		}
 	}
