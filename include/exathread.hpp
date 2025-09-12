@@ -49,6 +49,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #include <memory>
 #include <ranges>
 #include <stop_token>
+#include <sys/wait.h>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -376,18 +377,11 @@ namespace exathread {
 		/**
 		 * @brief Get the overall status of the collection
 		 *
-		 * @details The status progresses as follows: starting at Scheduled, once a future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Failed if any future fails. The Yielding status is never returned.
+		 * @details The status progresses as follows: starting at Pending (then Scheduled once scheduled to run), once any future starts executing the status is set to Executing, then Complete once all futures have completed.\n The status will be set to Failed if any future fails. The Yielding status is never returned.
 		 *
 		 * @returns The overall status
 		 */
 		Status checkStatus() const noexcept;
-
-		/**
-		 * @brief Get the pool that the futures exist on
-		 *
-		 * @returns The pool if it still exists, or an empty pointer otherwise
-		 */
-		std::weak_ptr<Pool> getPool() noexcept;
 
 		/**
 		 * @brief Schedule a tracked task for execution after these futures
@@ -559,14 +553,16 @@ namespace exathread {
 		 *
 		 * @returns Pool thread count
 		 */
-		std::size_t getThreadCount();
+		std::size_t getThreadCount() const noexcept;
 
 		/**
 		 * @brief Wait until there are no more tasks in the queue (tasks submitted during this call will continue to block it)
 		 *
 		 * @note This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread's queue was checked
 		 */
-		void waitIdle();
+		void waitIdle() const noexcept;
+
+		~Pool();
 
 	  private:
 		Pool(std::size_t threadCount);
@@ -574,7 +570,7 @@ namespace exathread {
 		static std::size_t totalThreads;
 		std::vector<details::ThreadData> threads;
 
-		friend void worker(std::stop_token, details::ThreadData&);
+		friend void worker(std::stop_token, std::shared_ptr<Pool>, std::size_t);
 		friend struct details::YieldOp;
 		friend struct details::VoidPromise;
 		template<typename U>
@@ -654,12 +650,12 @@ namespace exathread {
 
 namespace exathread {
 	struct details::Promise {
-		std::exception_ptr exception;	//The stored result exception (if one is thrown)
-		Status status;					//The status of the task
-		std::weak_ptr<Pool> pool;		//The pool of execution
-		std::size_t threadIdx;			//The index of the thread this task is running on
-		std::atomic_uint handleRefCount;//Reference count for how many tasks maintain the coroutine handle
-		std::vector<Task> next;			//The next task(s) to schedule after the completion of this one
+		std::exception_ptr exception;		//The stored result exception (if one is thrown)
+		Status status;						//The status of the task
+		std::weak_ptr<Pool> pool;			//The pool of execution
+		std::size_t threadIdx;				//The index of the thread this task is running on
+		std::atomic_uint handleRefCount;	//Reference count for how many tasks maintain the coroutine handle
+		std::vector<std::vector<Task>> next;//The next task(s) to schedule after the completion of this one
 
 		void unhandled_exception() noexcept {
 			exception = std::current_exception();
@@ -699,8 +695,12 @@ namespace exathread {
 
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
-			for(Task& t : next) {
-				//TODO
+			for(const auto& t : next) {
+				if(t.size() == 1) {
+					p->internalTaskEnqueue(t[0]);
+				} else {
+					p->internalBatchEnqueue(t);
+				}
 			}
 		}
 	};
@@ -720,8 +720,12 @@ namespace exathread {
 
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
-			for(Task& t : next) {
-				//TODO
+			for(const auto& t : next) {
+				if(t.size() == 1) {
+					p->internalTaskEnqueue(t[0]);
+				} else {
+					p->internalBatchEnqueue(t);
+				}
 			}
 		}
 	};
@@ -755,7 +759,7 @@ namespace exathread {
 		std::jthread thread;
 		std::vector<details::YieldOp> yields;
 		std::weak_ptr<Pool> pool;
-		std::size_t curSteal, myIndex;
+		std::size_t curSteal = 0, myIndex;
 		std::array<Task, 2048> ringbuf;
 		alignas(64) std::atomic<uint64_t> frontHead;
 		alignas(64) std::atomic<uint64_t> frontTail;
@@ -763,7 +767,13 @@ namespace exathread {
 		alignas(64) std::atomic<uint64_t> backTail;
 		void push(Task&& t);
 		Task pop();
-		std::size_t queueSize();
+		std::size_t queueSize() const;
+
+		ThreadData(ThreadData&& o);
+		ThreadData& operator=(ThreadData&& o);
+		ThreadData(const ThreadData&) = delete;
+		ThreadData& operator=(const ThreadData&) = delete;
+		ThreadData();
 	};
 
 	inline void details::ThreadData::push(Task&& t) {
@@ -836,7 +846,7 @@ namespace exathread {
 		}
 	}
 
-	inline std::size_t details::ThreadData::queueSize() {
+	inline std::size_t details::ThreadData::queueSize() const {
 		return backTail.load(std::memory_order_acquire) - frontTail.load(std::memory_order_acquire);
 	}
 
@@ -859,6 +869,44 @@ namespace exathread {
 			task.promise().status = Status::Executing;
 		}
 	};
+
+	inline details::ThreadData::ThreadData() {}
+
+	inline details::ThreadData::ThreadData(details::ThreadData&& o)
+	  // clang-format off
+	  : thread(std::exchange(o.thread, {})), yields(std::exchange(o.yields, {})), pool(std::exchange(o.pool, {})),
+	  	curSteal(o.curSteal), myIndex(o.myIndex), ringbuf(std::exchange(o.ringbuf, {})), frontHead(o.frontHead.load(std::memory_order_acquire)), 
+		frontTail(o.frontTail.load(std::memory_order_acquire)), backHead(o.backHead.load(std::memory_order_acquire)), backTail(o.backTail.load(std::memory_order_acquire)) {
+		// clang-format on
+		o.curSteal = 0;
+		o.myIndex = 0;
+		o.frontHead.store(0);
+		o.frontTail.store(0);
+		o.backHead.store(0);
+		o.backTail.store(0);
+	}
+
+	inline details::ThreadData& details::ThreadData::operator=(details::ThreadData&& o) {
+		if(this != &o) {
+			thread = std::exchange(o.thread, {});
+			yields = std::exchange(o.yields, {});
+			pool = std::exchange(o.pool, {});
+			ringbuf = std::exchange(o.ringbuf, {});
+			curSteal = o.curSteal;
+			o.curSteal = 0;
+			myIndex = o.myIndex;
+			o.myIndex = 0;
+			frontHead.store(o.frontHead.load(std::memory_order_acquire));
+			o.frontHead.store(0);
+			frontTail.store(o.frontTail.load(std::memory_order_acquire));
+			o.frontTail.store(0);
+			backHead.store(o.backHead.load(std::memory_order_acquire));
+			o.backHead.store(0);
+			backTail.store(o.backTail.load(std::memory_order_acquire));
+			o.backTail.store(0);
+		}
+		return *this;
+	}
 
 	inline details::YieldOp yieldUntilTrue(std::function<bool()> predicate) {
 		details::YieldOp yld;
@@ -911,6 +959,7 @@ namespace exathread {
 
 	template<typename T>
 	std::enable_if_t<!std::is_void_v<T>, T&> Future<T>::operator*() {
+		if(checkStatus() != Status::Complete) await();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
 		if(vp.exception) std::rethrow_exception(vp.exception);
 		return vp.val.value();
@@ -918,6 +967,7 @@ namespace exathread {
 
 	template<typename T>
 	std::enable_if_t<!std::is_void_v<T>, const T&> Future<T>::operator*() const {
+		if(checkStatus() != Status::Complete) await();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
 		if(vp.exception) std::rethrow_exception(vp.exception);
 		return vp.val.value();
@@ -925,12 +975,60 @@ namespace exathread {
 
 	template<typename T>
 	std::enable_if_t<!std::is_void_v<T>, T*> Future<T>::operator->() {
+		if(checkStatus() != Status::Complete) await();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
 		if(vp.exception) std::rethrow_exception(vp.exception);
 		return vp.val.value();
 	}
 
-	inline void worker(std::stop_token stop, details::ThreadData& data) {
+	template<typename T>
+	void MultiFuture<T>::await() {
+		Status s = checkStatus();
+		while(s != Status::Complete && s != Status::Failed) {
+			std::this_thread::yield();
+			s = checkStatus();
+		}
+	}
+
+	template<typename T>
+	std::enable_if_t<!std::is_void_v<T>, std::vector<T>> MultiFuture<T>::results() {
+		if(checkStatus() == Status::Failed) throw std::runtime_error("Cannot get results; at least one task has failed!");
+		if(checkStatus() != Status::Complete) await();
+		std::vector<T> res;
+		for(Future<T>& f : futures) {
+			res.push_back(*f);
+		}
+		return res;
+	}
+
+	template<typename T>
+	Status MultiFuture<T>::checkStatus() const noexcept {
+		Status s = Status::Pending;
+		bool fail = false;
+		bool allDone = true;
+		for(Future<T>& f : futures) {
+			if(f.checkStatus() == Status::Pending) allDone = false;
+			if(f.checkStatus() == Status::Scheduled) {
+				allDone = false;
+				s = Status::Scheduled;
+			}
+			if(f.checkStatus() == Status::Executing) {
+				allDone = false;
+				s = Status::Executing;
+			}
+			if(f.checkStatus() == Status::Failed) {
+				fail = false;
+			}
+		}
+		if(allDone) s = (fail ? Status::Failed : Status::Complete);
+		return s;
+	}
+
+	inline void worker(std::stop_token stop, std::shared_ptr<Pool> p, std::size_t idx) {
+		//Get data
+		details::ThreadData& data = p->threads[idx];
+
+		//Loop
 		while(!stop.stop_requested()) {
 			//Check the yield list
 			for(auto it = data.yields.begin(); it != data.yields.end();) {
@@ -1022,5 +1120,56 @@ namespace exathread {
 		}
 	}
 
+	inline std::size_t Pool::getThreadCount() const noexcept {
+		return threads.size();
+	}
 
+	inline void Pool::waitIdle() const noexcept {
+		while(true) {
+			bool exit = true;
+			for(const details::ThreadData& td : threads) {
+				if(td.queueSize() >= 0) {
+					exit = false;
+					break;
+				}
+			}
+			if(exit)
+				break;
+			else
+				std::this_thread::yield();
+		}
+	}
+
+	inline Pool::Pool(std::size_t threadCount) {
+		//Safety check
+		if(totalThreads + threadCount > std::thread::hardware_concurrency()) throw std::out_of_range("Total number of threads used by pools would exceed hardware concurrency limit!");
+		totalThreads += threadCount;
+
+		//Spawn threads
+		for(std::size_t i = 0; i < threadCount; i++) {
+			//Setup data
+			details::ThreadData& td = threads.emplace_back();
+			td.pool = weak_from_this();
+			td.myIndex = i;
+			td.frontHead.store(0);
+			td.frontTail.store(0);
+			td.backHead.store(0);
+			td.backTail.store(0);
+			td.thread = std::jthread(worker, shared_from_this(), i);
+		}
+	}
+
+	inline Pool::~Pool() {
+		//Wait for idle
+		waitIdle();
+
+		//Stop workers
+		for(details::ThreadData& td : threads) {
+			td.thread.request_stop();
+			td.thread.join();
+		}
+
+		//Decrement worker thread count
+		totalThreads -= threads.size();
+	}
 }
