@@ -332,7 +332,7 @@
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1afacd95e22215098c110ec7d5a92c64ac.html">Template Function exathread::corowrap</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1ae2a1895a7f1ac9ea556b4bbdf9a8495d.html">Function exathread::worker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1affc70a874cc889d683b39c82d17c33f5.html">Function exathread::worker</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html">Template Function exathread::yieldFor</a></li>
@@ -514,8 +514,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Pool14getThreadCountEv">
-<span id="_CPPv3N9exathread4Pool14getThreadCountEv"></span><span id="_CPPv2N9exathread4Pool14getThreadCountEv"></span><span id="exathread::Pool::getThreadCount"></span><span class="target" id="classexathread_1_1Pool_1a0bf98a63823a5589ea0233af832aef6d"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getThreadCount</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Pool14getThreadCountEv" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK9exathread4Pool14getThreadCountEv">
+<span id="_CPPv3NK9exathread4Pool14getThreadCountEv"></span><span id="_CPPv2NK9exathread4Pool14getThreadCountEv"></span><span id="exathread::Pool::getThreadCountC"></span><span class="target" id="classexathread_1_1Pool_1a030719b568595555484cd70c26e88758"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getThreadCount</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK9exathread4Pool14getThreadCountEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Get the number of worker threads managed the pool. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -525,14 +525,19 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Pool8waitIdleEv">
-<span id="_CPPv3N9exathread4Pool8waitIdleEv"></span><span id="_CPPv2N9exathread4Pool8waitIdleEv"></span><span id="exathread::Pool::waitIdle"></span><span class="target" id="classexathread_1_1Pool_1a77bedc363205beeb664f3b68bb0c2dc7"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">waitIdle</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Pool8waitIdleEv" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK9exathread4Pool8waitIdleEv">
+<span id="_CPPv3NK9exathread4Pool8waitIdleEv"></span><span id="_CPPv2NK9exathread4Pool8waitIdleEv"></span><span id="exathread::Pool::waitIdleC"></span><span class="target" id="classexathread_1_1Pool_1a464312da2622b5a1f6bf6e6728161a08"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">waitIdle</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK9exathread4Pool8waitIdleEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Wait until there are no more tasks in the queue (tasks submitted during this call will continue to block it) </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread’s queue was checked </p>
 </div>
 </dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread4PoolD0Ev">
+<span id="_CPPv3N9exathread4PoolD0Ev"></span><span id="_CPPv2N9exathread4PoolD0Ev"></span><span id="exathread::Pool::~Pool"></span><span class="target" id="classexathread_1_1Pool_1afdbc64ca6361794a60b95076c037ed01"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~Pool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4PoolD0Ev" title="Link to this definition"><span/></a><br /></dt>
+<dd></dd></dl>
 
 </div>
 <div class="breathe-sectiondef docutils container">
@@ -632,8 +637,9 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN9exathread4Pool14submitDetachedEv1FDp4Args"><code class="docutils literal notranslate"><span class="pre">Pool::submitDetached()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp00EN9exathread4Pool5batchE11MultiFutureI1RERK2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batch()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_NSt6ranges11input_rangeE0Dp0EN9exathread4Pool13batchDetachedEvRK2Rn1FDp6ExArgs"><code class="docutils literal notranslate"><span class="pre">Pool::batchDetached()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Pool14getThreadCountEv"><code class="docutils literal notranslate"><span class="pre">Pool::getThreadCount()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Pool8waitIdleEv"><code class="docutils literal notranslate"><span class="pre">Pool::waitIdle()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread4Pool14getThreadCountEv"><code class="docutils literal notranslate"><span class="pre">Pool::getThreadCount()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread4Pool8waitIdleEv"><code class="docutils literal notranslate"><span class="pre">Pool::waitIdle()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4PoolD0Ev"><code class="docutils literal notranslate"><span class="pre">Pool::~Pool()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Pool6CreateENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">Pool::Create()</span></code></a></li>
 </ul>
 </li>

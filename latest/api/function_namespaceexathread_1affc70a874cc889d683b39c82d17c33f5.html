@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Function exathread::yieldUntil &#8212; Exathread Documentation</title>
+    <title>Function exathread::worker &#8212; Exathread Documentation</title>
   
   
   
@@ -45,7 +45,7 @@
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/collapsible-lists/js/CollapsibleLists.compressed.js?v=73120307"></script>
     <script src="../_static/collapsible-lists/js/apply-collapsible-lists.js?v=660e4f45"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'api/function_namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/function_namespaceexathread_1affc70a874cc889d683b39c82d17c33f5';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://raw.githubusercontent.com/RobotLeopard86/Exathread/main/docs/switcher.json';
@@ -54,8 +54,8 @@
         </script>
     <link rel="icon" href="../_static/exathread_logo.png"/>
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)" href="function_namespaceexathread_1aac2e67e8ba092bccac27d7666e711e40.html" />
-    <link rel="prev" title="Template Function exathread::yieldFor" href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html" />
+    <link rel="next" title="Template Function exathread::yieldFor" href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html" />
+    <link rel="prev" title="Template Function exathread::corowrap" href="function_namespaceexathread_1afacd95e22215098c110ec7d5a92c64ac.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="latest" />
@@ -331,14 +331,14 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1afacd95e22215098c110ec7d5a92c64ac.html">Template Function exathread::corowrap</a></li>
 </ul>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1affc70a874cc889d683b39c82d17c33f5.html">Function exathread::worker</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Function exathread::worker</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html">Template Function exathread::yieldFor</a></li>
 </ul>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Function exathread::yieldUntil</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0.html">Function exathread::yieldUntil</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aac2e67e8ba092bccac27d7666e711e40.html">Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)</a></li>
@@ -386,7 +386,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">API Reference</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Function exathread::yieldUntil</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Function exathread::worker</span></li>
   </ul>
 </nav>
 </div>
@@ -403,33 +403,17 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="function-exathread-yielduntil">
-<span id="exhale-function-namespaceexathread-1a28aaff2fb37300740ee17c720e384dd0"></span><h1>Function exathread::yieldUntil<a class="headerlink" href="#function-exathread-yielduntil" title="Link to this heading"><span/></a></h1>
+  <section id="function-exathread-worker">
+<span id="exhale-function-namespaceexathread-1affc70a874cc889d683b39c82d17c33f5"></span><h1>Function exathread::worker<a class="headerlink" href="#function-exathread-worker" title="Link to this heading"><span/></a></h1>
 <ul class="simple">
 <li><p>Defined in <a class="reference internal" href="file_include_exathread.hpp.html#file-include-exathread-hpp"><span class="std std-ref">File exathread.hpp</span></a></p></li>
 </ul>
 <section id="function-documentation">
 <h2>Function Documentation<a class="headerlink" href="#function-documentation" title="Link to this heading"><span/></a></h2>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread10yieldUntilENSt6chrono12steady_clock10time_pointE">
-<span id="_CPPv3N9exathread10yieldUntilENSt6chrono12steady_clock10time_pointE"></span><span id="_CPPv2N9exathread10yieldUntilENSt6chrono12steady_clock10time_pointE"></span><span id="exathread::yieldUntil__std::chrono::steady_clock::time_point"></span><span class="target" id="namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">YieldOp</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">exathread</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">yieldUntil</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">chrono</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">steady_clock</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">time_point</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">time</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread10yieldUntilENSt6chrono12steady_clock10time_pointE" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Suspend execution of your task and allow other tasks to run until a certain point in time. </p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>As the use of this function makes your function a coroutine, it must explicitly return either a <a class="reference internal" href="classexathread_1_1VoidTask.html#classexathread_1_1VoidTask"><span class="std std-ref">VoidTask</span></a> or <a class="reference internal" href="classexathread_1_1ValueTask.html#classexathread_1_1ValueTask"><span class="std std-ref">ValueTask</span></a> and use <code class="docutils literal notranslate"><span class="pre">co_return</span></code> to be valid</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>time</strong> – The point in time until which to yield. It is not guaranteed that execution will resume exactly at the specified time point</p>
-</dd>
-<dt class="field-even">Throws<span class="colon">:</span></dt>
-<dd class="field-even"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the specified time point is in the past </p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>An awaitable object; you must use <code class="docutils literal notranslate"><span class="pre">co_await</span></code> on this result to yield correctly</p>
-</dd>
-</dl>
-</dd></dl>
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread6workerENSt10stop_tokenENSt10shared_ptrI4PoolEENSt6size_tE">
+<span id="_CPPv3N9exathread6workerENSt10stop_tokenENSt10shared_ptrI4PoolEENSt6size_tE"></span><span id="_CPPv2N9exathread6workerENSt10stop_tokenENSt10shared_ptrI4PoolEENSt6size_tE"></span><span id="exathread::worker__std::stop_token.std::shared_ptr:Pool:.std::s"></span><span class="target" id="namespaceexathread_1affc70a874cc889d683b39c82d17c33f5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">exathread</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">worker</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stop_token</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stop</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Pool.html#_CPPv4N9exathread4PoolE" title="exathread::Pool"><span class="n"><span class="pre">Pool</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idx</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread6workerENSt10stop_tokenENSt10shared_ptrI4PoolEENSt6size_tE" title="Link to this definition"><span/></a><br /></dt>
+<dd></dd></dl>
 
 </section>
 </section>
@@ -445,20 +429,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html"
+       href="function_namespaceexathread_1afacd95e22215098c110ec7d5a92c64ac.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Template Function exathread::yieldFor</p>
+        <p class="prev-next-title">Template Function exathread::corowrap</p>
       </div>
     </a>
     <a class="right-next"
-       href="function_namespaceexathread_1aac2e67e8ba092bccac27d7666e711e40.html"
+       href="function_namespaceexathread_1a0b07e996640cfc9e2db99e443690e169.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)</p>
+        <p class="prev-next-title">Template Function exathread::yieldFor</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -482,7 +466,7 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#function-documentation">Function Documentation</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread10yieldUntilENSt6chrono12steady_clock10time_pointE"><code class="docutils literal notranslate"><span class="pre">yieldUntil()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6workerENSt10stop_tokenENSt10shared_ptrI4PoolEENSt6size_tE"><code class="docutils literal notranslate"><span class="pre">worker()</span></code></a></li>
 </ul>
 </li>
 </ul>
