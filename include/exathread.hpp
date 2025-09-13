@@ -426,7 +426,6 @@ namespace exathread {
 		 * @tparam ExArgs Extra arguments to the function
 		 * @tparam R Function return type
 		 *
-		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
@@ -1084,7 +1083,7 @@ namespace exathread {
 
 	template<typename F, typename Arg1, typename... Args, typename R = std::invoke_result_t<F&&, Arg1, Args&&...>>
 		requires(!std::is_void_v<Arg1>)
-	auto corowrap(F&& f, Args&&... baseArgs) {
+	auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
 		//Set up argument holder
 		std::shared_ptr<details::ArgsHolder<Arg1, Args...>> args = std::make_shared<details::ArgsHolder<Arg1, Args...>>();
 		args->args = std::tuple<std::decay_t<Arg1>, std::decay_t<Args>...>();
@@ -1100,10 +1099,19 @@ namespace exathread {
 
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
-			const auto wrap = [args, fn = std::forward<F>(f)]() {
+			details::Promise* dp = nullptr;
+			const auto wrap = [args, fn = std::forward<F>(f)](details::Promise** dp) {
+				//Store promise data pointer and immediately suspend
+				//This is so we can safely use the pointer above
+				details::Promise* promise = *dp;
+				co_await std::suspend_always {};
+
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
 				R inner = std::apply(fn, std::move(args->args));
+				inner.promise().pool = promise->pool;
+				inner.promise().status = Status::Executing;
+				inner.promise().threadIdx = promise->threadIdx;
 				inner.resume();
 
 				//Await and return logic
@@ -1114,6 +1122,14 @@ namespace exathread {
 					co_return co_await inner;
 				}
 			};
+
+			//Start task and update promise data
+			Task wrapped = wrap(&dp);
+			dp = &wrapped.promise();
+			wrapped.resume();
+			wrapped.promise().arg1Set = setArg1;
+			wrapped.promise().pool = p;
+			wrapped.promise().status = Status::Pending;
 			return std::make_pair<R, decltype(setArg1)>(wrap(), std::move(setArg1));
 		} else {
 			//Void or not?
@@ -1136,7 +1152,7 @@ namespace exathread {
 
 	template<typename F, typename Arg1 = void, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
 		requires std::is_void_v<Arg1>
-	auto corowrap(F&& f, Args&&... baseArgs) {
+	auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
 		//Set up argument holder
 		std::shared_ptr<details::ArgsHolder<Args...>> args = std::make_shared<details::ArgsHolder<Args...>>();
 		args->args = std::tuple<std::decay_t<Args>...>(baseArgs...);
@@ -1150,10 +1166,19 @@ namespace exathread {
 
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
-			const auto wrap = [args, fn = std::forward<F>(f)]() {
+			details::Promise* dp = nullptr;
+			const auto wrap = [args, fn = std::forward<F>(f)](details::Promise** dp) {
+				//Store promise data pointer and immediately suspend
+				//This is so we can safely use the pointer above
+				details::Promise* promise = *dp;
+				co_await std::suspend_always {};
+
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
 				R inner = std::apply(fn, std::move(args->args));
+				inner.promise().pool = promise->pool;
+				inner.promise().status = Status::Executing;
+				inner.promise().threadIdx = promise->threadIdx;
 				inner.resume();
 
 				//Await and return logic
@@ -1164,6 +1189,14 @@ namespace exathread {
 					co_return co_await inner;
 				}
 			};
+
+			//Start task and update promise data
+			Task wrapped = wrap(&dp);
+			dp = &wrapped.promise();
+			wrapped.resume();
+			wrapped.promise().arg1Set = fakeSetArg1;
+			wrapped.promise().pool = p;
+			wrapped.promise().status = Status::Pending;
 			return std::make_pair<R, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
 		} else {
 			//Void or not?
