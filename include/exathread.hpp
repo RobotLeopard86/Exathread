@@ -44,21 +44,20 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 
 #include <any>
 #include <atomic>
+#include <chrono>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <ranges>
+#include <stdexcept>
 #include <stop_token>
-#include <sys/wait.h>
 #include <thread>
 #include <type_traits>
-#include <vector>
 #include <utility>
-#include <optional>
-#include <functional>
-#include <stdexcept>
-#include <chrono>
+#include <vector>
 
 ///@brief The root namespace for all Exathread functionality
 namespace exathread {
@@ -1040,6 +1039,7 @@ namespace exathread {
 			//Check the yield list
 			for(auto it = data.yields.begin(); it != data.yields.end();) {
 				if(it->predicate()) {
+					it->task.promise().threadIdx = data.myIndex;
 					it->task.resume();
 					it = data.yields.erase(it);
 				} else
@@ -1052,6 +1052,7 @@ namespace exathread {
 				try {
 					//Fetch the next task and run it
 					Task t = data.pop();
+					t.promise().threadIdx = data.myIndex;
 					t.resume();
 				} catch(...) {}
 			} else {
@@ -1068,6 +1069,7 @@ namespace exathread {
 					//Commence thievery
 					try {
 						Task t = p->threads[data.curSteal].pop();
+						t.promise().threadIdx = data.myIndex;
 						t.resume();
 						break;
 					} catch(...) {}
@@ -1130,7 +1132,7 @@ namespace exathread {
 			wrapped.promise().arg1Set = setArg1;
 			wrapped.promise().pool = p;
 			wrapped.promise().status = Status::Pending;
-			return std::make_pair<R, decltype(setArg1)>(wrap(), std::move(setArg1));
+			return std::make_pair<R, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
@@ -1139,13 +1141,25 @@ namespace exathread {
 					std::apply(fn, std::move(args->args));
 					co_return;
 				};
-				return std::make_pair<VoidTask, decltype(setArg1)>(wrap(), std::move(setArg1));
+
+				//Set promise data
+				VoidTask wrapped = wrap();
+				wrapped.promise().arg1Set = setArg1;
+				wrapped.promise().pool = p;
+				wrapped.promise().status = Status::Pending;
+				return std::make_pair<VoidTask, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			} else {
 				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
 					//Run the function
 					co_return std::apply(fn, std::move(args->args));
 				};
-				return std::make_pair<ValueTask<R>, decltype(setArg1)>(wrap(), std::move(setArg1));
+
+				//Set promise data
+				ValueTask<R> wrapped = wrap();
+				wrapped.promise().arg1Set = setArg1;
+				wrapped.promise().pool = p;
+				wrapped.promise().status = Status::Pending;
+				return std::make_pair<ValueTask<R>, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			}
 		}
 	}
@@ -1197,7 +1211,7 @@ namespace exathread {
 			wrapped.promise().arg1Set = fakeSetArg1;
 			wrapped.promise().pool = p;
 			wrapped.promise().status = Status::Pending;
-			return std::make_pair<R, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
+			return std::make_pair<R, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
@@ -1206,13 +1220,25 @@ namespace exathread {
 					std::apply(fn, std::move(args->args));
 					co_return;
 				};
-				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
+
+				//Set promise data
+				VoidTask wrapped = wrap();
+				wrapped.promise().arg1Set = fakeSetArg1;
+				wrapped.promise().pool = p;
+				wrapped.promise().status = Status::Pending;
+				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			} else {
 				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
 					//Run the function
 					co_return std::apply(fn, std::move(args->args));
 				};
-				return std::make_pair<ValueTask<R>, decltype(fakeSetArg1)>(wrap(), std::move(fakeSetArg1));
+
+				//Set promise data
+				ValueTask<R> wrapped = wrap();
+				wrapped.promise().arg1Set = fakeSetArg1;
+				wrapped.promise().pool = p;
+				wrapped.promise().status = Status::Pending;
+				return std::make_pair<ValueTask<R>, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			}
 		}
 	}
@@ -1268,5 +1294,93 @@ namespace exathread {
 
 		//Decrement worker thread count
 		totalThreads -= threads.size();
+	}
+
+	inline void Pool::internalTaskEnqueue(Task t) {
+		//Guess which thread has the smallest queue
+		//This is not exact, of course
+		std::size_t selected = 0;
+		std::size_t curSmallestSize = SIZE_T_MAX;
+		for(std::size_t i = 0; i < threads.size(); ++i) {
+			if(std::size_t qs = threads[i].queueSize(); qs < curSmallestSize) {
+				curSmallestSize = qs;
+				selected = i;
+			}
+			if(curSmallestSize == 0) break;
+		}
+
+		//Now insert into that queue
+		threads[selected].push(std::move(t));
+	}
+
+	inline void Pool::internalBatchEnqueue(std::vector<Task> tasks) {
+		//Only one task submitted? This isn't a batch!
+		if(tasks.size() == 1) return internalTaskEnqueue(tasks[0]);
+
+		//Figure out best distribution for tasks
+		std::size_t workers = threads.size();
+		std::size_t tasksPerWorker = 0;
+		std::size_t extras = 0;
+		if(tasks.size() < threads.size()) {
+			//Spread tasks across less threads because stretching things thin isn't needed for small loads
+			workers = (tasks.size() / 2);
+			tasksPerWorker = tasks.size() / workers;
+			if(workers * tasksPerWorker < tasks.size()) {
+				//There was an extra, we'll increase the load for one worker
+				extras = 1;
+			}
+		} else {
+			if(auto leftover = tasks.size() % workers; leftover > 0) {
+				//Uneven distribution (not yay)
+				//We'll divide as evenly as possible and then allocate the others on top
+				tasksPerWorker = (tasks.size() - leftover) / workers;
+				extras = leftover;
+			} else {
+				//Even distribution (yay)
+				tasksPerWorker = tasks.size() / workers;
+			}
+		}
+
+		//Select workers
+		std::vector<std::size_t> selectedWorkers(workers);
+		for(std::size_t i = 0; i < workers; ++i) selectedWorkers[i] = i;
+		if(workers < threads.size()) {
+			//Approximately sort the threads by lowest current load
+			std::sort(selectedWorkers.begin(), selectedWorkers.end(), [this](std::size_t a, std::size_t b) {
+				return threads[a].queueSize() < threads[b].queueSize();
+			});
+
+			//Select the N first (lowest-load) threads
+			selectedWorkers.erase(selectedWorkers.begin() + workers, selectedWorkers.end());
+		}
+
+		//Distribute tasks
+	}
+
+	template<typename F, typename... Args, typename R>
+		requires std::invocable<F&&, Args&&...>
+	inline Future<R> Pool::submit(F func, Args... args) {
+		//Wrap for argument binding and coroutine conversion
+		auto [task, argset] = corowrap(weak_from_this(), std::forward<F>(func), std::forward<Args...>(args...));
+
+		//Create future object
+		Future<R> fut;
+		fut.task = task;
+
+		//Enqueue task
+		internalTaskEnqueue(task);
+
+		//Return future
+		return fut;
+	}
+
+	template<typename F, typename... Args>
+		requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
+	inline void Pool::submitDetached(F func, Args... args) {
+		//Wrap for argument binding and coroutine conversion
+		auto [task, argset] = corowrap(weak_from_this(), std::forward<F>(func), std::forward<Args...>(args...));
+
+		//Enqueue task
+		internalTaskEnqueue(task);
 	}
 }
