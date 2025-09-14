@@ -578,8 +578,14 @@ namespace exathread {
 			requires(!std::is_void_v<U>)
 		friend struct details::ValuePromise;
 
-		void internalTaskEnqueue(Task t);
-		void internalBatchEnqueue(std::vector<Task> b);
+		std::array<Task, 4096> ringbuf;
+		alignas(64) std::atomic<uint64_t> frontHead;
+		alignas(64) std::atomic<uint64_t> frontTail;
+		alignas(64) std::atomic<uint64_t> backHead;
+		alignas(64) std::atomic<uint64_t> backTail;
+		void push(Task&& t);
+		Task pop();
+		std::size_t queueSize() const;
 	};
 
 	/**
@@ -697,11 +703,9 @@ namespace exathread {
 
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
-			for(const std::vector<Task>& t : next) {
-				if(t.size() == 1) {
-					p->internalTaskEnqueue(t[0]);
-				} else {
-					p->internalBatchEnqueue(t);
+			for(std::vector<Task>& t : next) {
+				for(Task& tsk : t) {
+					p->push(std::move(tsk));
 				}
 			}
 		}
@@ -723,14 +727,9 @@ namespace exathread {
 		void continuation() override {
 			std::shared_ptr<Pool> p = pool.lock();
 			for(std::vector<Task>& t : next) {
-				if(t.size() == 1) {
-					t[0].promise().arg1Set(val.value());
-					p->internalTaskEnqueue(t[0]);
-				} else {
-					for(Task& task : t) {
-						task.promise().arg1Set(val.value());
-					}
-					p->internalBatchEnqueue(t);
+				for(Task& tsk : t) {
+					tsk.promise().arg1Set(val.value());
+					p->push(std::move(tsk));
 				}
 			}
 		}
@@ -766,14 +765,6 @@ namespace exathread {
 		std::vector<details::YieldOp> yields;
 		std::weak_ptr<Pool> pool;
 		std::size_t curSteal = 0, myIndex;
-		std::array<Task, 2048> ringbuf;
-		alignas(64) std::atomic<uint64_t> frontHead;
-		alignas(64) std::atomic<uint64_t> frontTail;
-		alignas(64) std::atomic<uint64_t> backHead;
-		alignas(64) std::atomic<uint64_t> backTail;
-		void push(Task&& t);
-		Task pop();
-		std::size_t queueSize() const;
 
 		ThreadData(ThreadData&& o);
 		ThreadData& operator=(ThreadData&& o);
@@ -781,80 +772,6 @@ namespace exathread {
 		ThreadData& operator=(const ThreadData&) = delete;
 		ThreadData();
 	};
-
-	inline void details::ThreadData::push(Task&& t) {
-		//Reserve slot in ring buffer (CAS)
-		uint64_t bh0 = 0, bh1 = 0;
-		do {
-			//Advance indices with wrap-around protection
-			uint64_t ft = frontTail.load(std::memory_order_acquire);
-			bh0 = backHead.load(std::memory_order_acquire);
-			bh1 = bh0 + 1;
-			while((bh1 - ft) >= ringbuf.size()) {
-				std::this_thread::yield();
-				ft = frontTail.load(std::memory_order_acquire);
-				bh0 = backHead.load(std::memory_order_acquire);
-				bh1 = bh0 + 1;
-			}
-		} while(!backHead.compare_exchange_strong(bh0, bh1, std::memory_order_acq_rel, std::memory_order_relaxed));
-
-		//Write to reserved slot
-		ringbuf[bh1 % ringbuf.size()] = std::move(t);
-
-		//Advance tail index when possible
-		uint64_t tailBase = backTail.load(std::memory_order_relaxed);
-		if(bh1 <= tailBase) return;
-		while(!backTail.compare_exchange_strong(tailBase, bh1, std::memory_order_release, std::memory_order_relaxed)) {
-			std::this_thread::yield();
-
-			//Make sure the tail hasn't passed what we thought it was
-			if(tailBase >= bh1) return;
-		}
-	}
-
-	inline Task details::ThreadData::pop() {
-		while(true) {
-			//Check if empty
-			if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
-
-			//Reserve slot in ring buffer (CAS)
-			uint64_t fh0 = 0, fh1 = 0;
-			do {
-				//Advance indices
-				fh0 = frontHead.load(std::memory_order_acquire);
-				fh1 = fh0 + 1;
-
-				//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
-				if(fh1 < frontTail.load(std::memory_order_acquire)) continue;
-
-				//Wrap-around prevention (head can't wrap around past tail)
-				if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) continue;
-
-				//Index pass prevention (front can't get ahead of back)
-				if(fh1 > backTail.load(std::memory_order_acquire)) continue;
-			} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
-
-			//Read from safe slot
-			Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
-
-			//Advance tail index when possible
-			uint64_t tailBase = frontTail.load(std::memory_order_relaxed);
-			if(fh1 <= tailBase) return t;
-			while(!frontTail.compare_exchange_strong(tailBase, fh1, std::memory_order_release, std::memory_order_relaxed)) {
-				std::this_thread::yield();
-
-				//Make sure the tail hasn't passed what we thought it was
-				if(tailBase >= fh1) return t;
-			}
-
-			//Return value
-			return t;
-		}
-	}
-
-	inline std::size_t details::ThreadData::queueSize() const {
-		return backTail.load(std::memory_order_acquire) - frontTail.load(std::memory_order_acquire);
-	}
 
 	struct details::YieldOp {
 		std::function<bool()> predicate;
@@ -875,44 +792,6 @@ namespace exathread {
 			task.promise().status = Status::Executing;
 		}
 	};
-
-	inline details::ThreadData::ThreadData() {}
-
-	inline details::ThreadData::ThreadData(details::ThreadData&& o)
-	  // clang-format off
-	  : thread(std::exchange(o.thread, {})), yields(std::exchange(o.yields, {})), pool(std::exchange(o.pool, {})),
-	  	curSteal(o.curSteal), myIndex(o.myIndex), ringbuf(std::exchange(o.ringbuf, {})), frontHead(o.frontHead.load(std::memory_order_acquire)), 
-		frontTail(o.frontTail.load(std::memory_order_acquire)), backHead(o.backHead.load(std::memory_order_acquire)), backTail(o.backTail.load(std::memory_order_acquire)) {
-		// clang-format on
-		o.curSteal = 0;
-		o.myIndex = 0;
-		o.frontHead.store(0);
-		o.frontTail.store(0);
-		o.backHead.store(0);
-		o.backTail.store(0);
-	}
-
-	inline details::ThreadData& details::ThreadData::operator=(details::ThreadData&& o) {
-		if(this != &o) {
-			thread = std::exchange(o.thread, {});
-			yields = std::exchange(o.yields, {});
-			pool = std::exchange(o.pool, {});
-			ringbuf = std::exchange(o.ringbuf, {});
-			curSteal = o.curSteal;
-			o.curSteal = 0;
-			myIndex = o.myIndex;
-			o.myIndex = 0;
-			frontHead.store(o.frontHead.load(std::memory_order_acquire));
-			o.frontHead.store(0);
-			frontTail.store(o.frontTail.load(std::memory_order_acquire));
-			o.frontTail.store(0);
-			backHead.store(o.backHead.load(std::memory_order_acquire));
-			o.backHead.store(0);
-			backTail.store(o.backTail.load(std::memory_order_acquire));
-			o.backTail.store(0);
-		}
-		return *this;
-	}
 
 	inline details::YieldOp yieldUntilTrue(std::function<bool()> predicate) {
 		details::YieldOp yld;
@@ -1047,33 +926,14 @@ namespace exathread {
 			}
 
 			//Check the regular task queue
-			if(data.queueSize() > 0) {
-				//We have to try/catch here in case a steal happened right before here and the queue has become empty
+			if(p->queueSize() > 0) {
+				//We have to try/catch here in case we got suspended right before here and the queue has become empty
 				try {
 					//Fetch the next task and run it
-					Task t = data.pop();
+					Task t = p->pop();
 					t.promise().threadIdx = data.myIndex;
 					t.resume();
 				} catch(...) {}
-			} else {
-				//Steal a task from somebody else's queue
-				std::shared_ptr<Pool> p = data.pool.lock();
-				while(true) {
-					//Select a victim
-					while(p->threads[data.curSteal].queueSize() <= 0) {
-						++data.curSteal;
-						if(data.curSteal >= p->threads.size()) data.curSteal = 0;
-						if(data.curSteal == data.myIndex) ++data.curSteal;
-					}
-
-					//Commence thievery
-					try {
-						Task t = p->threads[data.curSteal].pop();
-						t.promise().threadIdx = data.myIndex;
-						t.resume();
-						break;
-					} catch(...) {}
-				}
 			}
 		}
 	}
@@ -1243,24 +1103,86 @@ namespace exathread {
 		}
 	}
 
+	inline void Pool::push(Task&& t) {
+		//Reserve slot in ring buffer (CAS)
+		uint64_t bh0 = 0, bh1 = 0;
+		do {
+			//Advance indices with wrap-around protection
+			uint64_t ft = frontTail.load(std::memory_order_acquire);
+			bh0 = backHead.load(std::memory_order_acquire);
+			bh1 = bh0 + 1;
+			while((bh1 - ft) >= ringbuf.size()) {
+				std::this_thread::yield();
+				ft = frontTail.load(std::memory_order_acquire);
+				bh0 = backHead.load(std::memory_order_acquire);
+				bh1 = bh0 + 1;
+			}
+		} while(!backHead.compare_exchange_strong(bh0, bh1, std::memory_order_acq_rel, std::memory_order_relaxed));
+
+		//Write to reserved slot
+		ringbuf[bh1 % ringbuf.size()] = std::move(t);
+
+		//Advance tail index when possible
+		uint64_t tailBase = backTail.load(std::memory_order_relaxed);
+		if(bh1 <= tailBase) return;
+		while(!backTail.compare_exchange_strong(tailBase, bh1, std::memory_order_release, std::memory_order_relaxed)) {
+			std::this_thread::yield();
+
+			//Make sure the tail hasn't passed what we thought it was
+			if(tailBase >= bh1) return;
+		}
+	}
+
+	inline Task Pool::pop() {
+		while(true) {
+			//Check if empty
+			if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
+
+			//Reserve slot in ring buffer (CAS)
+			uint64_t fh0 = 0, fh1 = 0;
+			do {
+				//Advance indices
+				fh0 = frontHead.load(std::memory_order_acquire);
+				fh1 = fh0 + 1;
+
+				//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
+				if(fh1 < frontTail.load(std::memory_order_acquire)) continue;
+
+				//Wrap-around prevention (head can't wrap around past tail)
+				if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) continue;
+
+				//Index pass prevention (front can't get ahead of back)
+				if(fh1 > backTail.load(std::memory_order_acquire)) continue;
+			} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
+
+			//Read from safe slot
+			Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
+
+			//Advance tail index when possible
+			uint64_t tailBase = frontTail.load(std::memory_order_relaxed);
+			if(fh1 <= tailBase) return t;
+			while(!frontTail.compare_exchange_strong(tailBase, fh1, std::memory_order_release, std::memory_order_relaxed)) {
+				std::this_thread::yield();
+
+				//Make sure the tail hasn't passed what we thought it was
+				if(tailBase >= fh1) return t;
+			}
+
+			//Return value
+			return t;
+		}
+	}
+
+	inline std::size_t Pool::queueSize() const {
+		return backTail.load(std::memory_order_acquire) - frontTail.load(std::memory_order_acquire);
+	}
+
 	inline std::size_t Pool::getThreadCount() const noexcept {
 		return threads.size();
 	}
 
 	inline void Pool::waitIdle() const noexcept {
-		while(true) {
-			bool exit = true;
-			for(const details::ThreadData& td : threads) {
-				if(td.queueSize() >= 0) {
-					exit = false;
-					break;
-				}
-			}
-			if(exit)
-				break;
-			else
-				std::this_thread::yield();
-		}
+		while(queueSize() >= 0) std::this_thread::yield();
 	}
 
 	inline Pool::Pool(std::size_t threadCount) {
@@ -1274,10 +1196,6 @@ namespace exathread {
 			details::ThreadData& td = threads.emplace_back();
 			td.pool = weak_from_this();
 			td.myIndex = i;
-			td.frontHead.store(0);
-			td.frontTail.store(0);
-			td.backHead.store(0);
-			td.backTail.store(0);
 			td.thread = std::jthread(worker, shared_from_this(), i);
 		}
 	}
@@ -1296,67 +1214,6 @@ namespace exathread {
 		totalThreads -= threads.size();
 	}
 
-	inline void Pool::internalTaskEnqueue(Task t) {
-		//Guess which thread has the smallest queue
-		//This is not exact, of course
-		std::size_t selected = 0;
-		std::size_t curSmallestSize = SIZE_T_MAX;
-		for(std::size_t i = 0; i < threads.size(); ++i) {
-			if(std::size_t qs = threads[i].queueSize(); qs < curSmallestSize) {
-				curSmallestSize = qs;
-				selected = i;
-			}
-			if(curSmallestSize == 0) break;
-		}
-
-		//Now insert into that queue
-		threads[selected].push(std::move(t));
-	}
-
-	inline void Pool::internalBatchEnqueue(std::vector<Task> tasks) {
-		//Only one task submitted? This isn't a batch!
-		if(tasks.size() == 1) return internalTaskEnqueue(tasks[0]);
-
-		//Figure out best distribution for tasks
-		std::size_t workers = threads.size();
-		std::size_t tasksPerWorker = 0;
-		std::size_t extras = 0;
-		if(tasks.size() < threads.size()) {
-			//Spread tasks across less threads because stretching things thin isn't needed for small loads
-			workers = (tasks.size() / 2);
-			tasksPerWorker = tasks.size() / workers;
-			if(workers * tasksPerWorker < tasks.size()) {
-				//There was an extra, we'll increase the load for one worker
-				extras = 1;
-			}
-		} else {
-			if(auto leftover = tasks.size() % workers; leftover > 0) {
-				//Uneven distribution (not yay)
-				//We'll divide as evenly as possible and then allocate the others on top
-				tasksPerWorker = (tasks.size() - leftover) / workers;
-				extras = leftover;
-			} else {
-				//Even distribution (yay)
-				tasksPerWorker = tasks.size() / workers;
-			}
-		}
-
-		//Select workers
-		std::vector<std::size_t> selectedWorkers(workers);
-		for(std::size_t i = 0; i < workers; ++i) selectedWorkers[i] = i;
-		if(workers < threads.size()) {
-			//Approximately sort the threads by lowest current load
-			std::sort(selectedWorkers.begin(), selectedWorkers.end(), [this](std::size_t a, std::size_t b) {
-				return threads[a].queueSize() < threads[b].queueSize();
-			});
-
-			//Select the N first (lowest-load) threads
-			selectedWorkers.erase(selectedWorkers.begin() + workers, selectedWorkers.end());
-		}
-
-		//Distribute tasks
-	}
-
 	template<typename F, typename... Args, typename R>
 		requires std::invocable<F&&, Args&&...>
 	inline Future<R> Pool::submit(F func, Args... args) {
@@ -1368,7 +1225,7 @@ namespace exathread {
 		fut.task = task;
 
 		//Enqueue task
-		internalTaskEnqueue(task);
+		push(task);
 
 		//Return future
 		return fut;
@@ -1381,6 +1238,6 @@ namespace exathread {
 		auto [task, argset] = corowrap(weak_from_this(), std::forward<F>(func), std::forward<Args...>(args...));
 
 		//Enqueue task
-		internalTaskEnqueue(task);
+		push(task);
 	}
 }
