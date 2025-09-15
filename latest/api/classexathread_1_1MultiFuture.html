@@ -420,8 +420,8 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread11MultiFuture11MultiFutureE6FutureI1TEz">
-<span id="_CPPv3N9exathread11MultiFuture11MultiFutureE6FutureI1TEz"></span><span id="_CPPv2N9exathread11MultiFuture11MultiFutureE6FutureI1TEz"></span><span id="exathread::MultiFuture::MultiFuture__Future:T:.z"></span><span class="target" id="classexathread_1_1MultiFuture_1a4c022429aca7d08346894e567ddf5643"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MultiFuture</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread11MultiFutureE" title="exathread::MultiFuture::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span>, <span class="p"><span class="pre">...</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread11MultiFuture11MultiFutureE6FutureI1TEz" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread11MultiFuture11MultiFutureENSt16initializer_listI6FutureI1TEEE">
+<span id="_CPPv3N9exathread11MultiFuture11MultiFutureENSt16initializer_listI6FutureI1TEEE"></span><span id="_CPPv2N9exathread11MultiFuture11MultiFutureENSt16initializer_listI6FutureI1TEEE"></span><span id="exathread::MultiFuture::MultiFuture__std::initializer_list:Future:T::"></span><span class="target" id="classexathread_1_1MultiFuture_1a5f4dc9a1464de9cd32e6a4011be08e92"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MultiFuture</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">initializer_list</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread11MultiFutureE" title="exathread::MultiFuture::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread11MultiFuture11MultiFutureENSt16initializer_listI6FutureI1TEEE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Create a <a class="reference internal" href="#classexathread_1_1MultiFuture"><span class="std std-ref">MultiFuture</span></a> with a collection of futures. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
@@ -491,10 +491,7 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has already been completed </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p></li>
-</ul>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p>
 </dd>
 </dl>
 </dd></dl>
@@ -517,10 +514,7 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has already been completed </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p></li>
-</ul>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p>
 </dd>
 </dl>
 </dd></dl>
@@ -545,10 +539,7 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has been completed </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p></li>
-</ul>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p>
 </dd>
 </dl>
 </dd></dl>
@@ -572,10 +563,7 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the future has been completed </p></li>
-<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p></li>
-</ul>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which the futures belong no longer exists </p>
 </dd>
 </dl>
 </dd></dl>
@@ -650,7 +638,7 @@
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-documentation">Class Documentation</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN9exathread11MultiFutureE"><code class="docutils literal notranslate"><span class="pre">MultiFuture</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread11MultiFuture11MultiFutureE6FutureI1TEz"><code class="docutils literal notranslate"><span class="pre">MultiFuture::MultiFuture()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread11MultiFuture11MultiFutureENSt16initializer_listI6FutureI1TEEE"><code class="docutils literal notranslate"><span class="pre">MultiFuture::MultiFuture()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread11MultiFuture11MultiFutureERRNSt6vectorI6FutureI1TEEE"><code class="docutils literal notranslate"><span class="pre">MultiFuture::MultiFuture()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread11MultiFuture4sizeEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::size()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread11MultiFuture5awaitEv"><code class="docutils literal notranslate"><span class="pre">MultiFuture::await()</span></code></a></li>
