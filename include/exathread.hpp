@@ -49,6 +49,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #include <cstddef>
 #include <exception>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -242,7 +243,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const T&, ExArgs&&...>>
@@ -258,7 +258,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs>
@@ -278,7 +277,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, const T&, const I&, ExArgs&&...>>
@@ -297,7 +295,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
@@ -349,6 +346,7 @@ namespace exathread {
 
 		Future() {}
 		friend class Pool;
+		friend class MultiFuture<T>;
 	};
 
 	///@cond
@@ -398,7 +396,7 @@ namespace exathread {
 		 *
 		 * @throws std::logic_error If any of the futures belongs to a different pools from the others
 		 */
-		explicit MultiFuture(Future<T>, ...);
+		explicit MultiFuture(std::initializer_list<Future<T>>);
 
 		/**
 		 * @brief Create a MultiFuture with a collection of futures
@@ -438,7 +436,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has already been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
@@ -454,7 +451,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has already been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs>
@@ -473,7 +469,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const T&, ExArgs&&...>>
@@ -491,7 +486,6 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
-		 * @throws std::logic_error If the future has been completed
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs>
@@ -629,8 +623,6 @@ namespace exathread {
 
 		/**
 		 * @brief Wait until there are no more tasks in the queue (tasks submitted during this call will continue to block it)
-		 *
-		 * @note This function is only approximant due to the nature of multithreading; it is possible that some tasks may remain if they were submitted after a thread's queue was checked
 		 */
 		void waitIdle() const noexcept;
 
@@ -645,9 +637,13 @@ namespace exathread {
 		friend void worker(std::stop_token, std::shared_ptr<Pool>, std::size_t);
 		friend struct details::YieldOp;
 		friend struct details::VoidPromise;
-		template<typename U>
-			requires(!std::is_void_v<U>)
+		template<typename T>
+			requires(!std::is_void_v<T>)
 		friend struct details::ValuePromise;
+		template<typename T>
+		friend class Future;
+		template<typename T>
+		friend class MultiFuture;
 
 		std::array<Task, 4096> ringbuf;
 		alignas(64) std::atomic<uint64_t> frontHead;
@@ -935,6 +931,26 @@ namespace exathread {
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
 		if(vp.exception) std::rethrow_exception(vp.exception);
 		return vp.val.value();
+	}
+
+	template<typename T>
+	MultiFuture<T>::MultiFuture(std::initializer_list<Future<T>> futs) : futures(futs) {
+		std::shared_ptr<Pool> p;
+		for(const Future<T>& f : futures) {
+			std::shared_ptr<Pool> fp = f.task.promise().pool.lock();
+			if(p && fp != p) throw std::logic_error("Cannot create a multi-future with futures from different pools!");
+			p = fp;
+		}
+	}
+
+	template<typename T>
+	MultiFuture<T>::MultiFuture(std::vector<Future<T>>&& futs) : futures(std::move(futs)) {
+		std::shared_ptr<Pool> p;
+		for(const Future<T>& f : futures) {
+			std::shared_ptr<Pool> fp = f.task.promise().pool.lock();
+			if(p && fp != p) throw std::logic_error("Cannot create a multi-future with futures from different pools!");
+			p = fp;
+		}
 	}
 
 	template<typename T>
@@ -1357,6 +1373,242 @@ namespace exathread {
 
 			//Enqueue task
 			push(std::move(task));
+		}
+	}
+
+	template<typename T>
+	template<typename F, typename... ExArgs, typename R>
+		requires std::invocable<F&&, const T&, ExArgs&&...>
+	[[nodiscard]] Future<R> Future<T>::then(F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Wrap for argument binding and coroutine conversion
+		auto [task, argset] = corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+		task.arg1Set = argset;
+
+		//Create future
+		Future<R> fut;
+		fut.task = task;
+
+		//Schedule
+		if(checkStatus() == Status::Complete) {
+			//Set arguments and schedule now
+			argset(*(*this));
+			this->task.promise().pool.lock()->push(std::move(task));
+		} else {
+			//Add to continuation list
+			this->task.promise().next.emplace_back(task);
+		}
+
+		return fut;
+	}
+
+	template<typename T>
+	template<typename F, typename... ExArgs>
+		requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
+	void Future<T>::thenDetached(F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Wrap for argument binding and coroutine conversion
+		auto [task, argset] = corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+		task.arg1Set = argset;
+
+		//Schedule
+		if(checkStatus() == Status::Complete) {
+			//Set arguments and schedule now
+			argset(*(*this));
+			this->task.promise().pool.lock()->push(std::move(task));
+		} else {
+			//Add to continuation list
+			this->task.promise().next.emplace_back(task);
+		}
+	}
+
+	template<typename T>
+	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
+		requires std::invocable<F&&, const T&, const I&, ExArgs&&...>
+	[[nodiscard]] MultiFuture<R> Future<T>::thenBatch(Rn&& src, F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Generate & enqueue tasks
+		std::vector<Future<R>> futs;
+		for(const I& item : src) {
+			//Wrap for argument binding and coroutine conversion
+			auto [task, argset] = [this, &func, &item, &exargs...]() {
+				if constexpr(sizeof...(exargs) == 0) {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+				} else {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+				}
+			}();
+			task.arg1Set = argset;
+
+			//Create future object
+			Future<R> fut;
+			fut.task = task;
+			futs.push_back(std::move(fut));
+
+			//Schedule
+			if(checkStatus() == Status::Complete) {
+				//Set arguments and schedule now
+				argset(*(*this));
+				this->task.promise().pool.lock()->push(std::move(task));
+			} else {
+				//Add to continuation list
+				this->task.promise().next.emplace_back(task);
+			}
+		}
+
+		//Create multi-future
+		MultiFuture<R> multifut(std::move(futs));
+		return multifut;
+	}
+
+	template<typename T>
+	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
+		requires std::invocable<F&&, const T&, I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, const I&, ExArgs&&...>>
+	void Future<T>::thenBatchDetached(Rn&& src, F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Generate & enqueue tasks
+		for(const I& item : src) {
+			//Wrap for argument binding and coroutine conversion
+			auto [task, argset] = [this, &func, &item, &exargs...]() {
+				if constexpr(sizeof...(exargs) == 0) {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+				} else {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+				}
+			}();
+			task.arg1Set = argset;
+
+			//Schedule
+			if(checkStatus() == Status::Complete) {
+				//Set arguments and schedule now
+				argset(*(*this));
+				this->task.promise().pool.lock()->push(std::move(task));
+			} else {
+				//Add to continuation list
+				this->task.promise().next.emplace_back(task);
+			}
+		}
+	}
+
+	template<typename F, typename... ExArgs, typename R>
+		requires std::invocable<F&&, ExArgs&&...>
+	[[nodiscard]] Future<R> Future<void>::then(F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Wrap for argument binding and coroutine conversion
+		auto [task, argset] = corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+		task.arg1Set = argset;
+
+		//Create future
+		Future<R> fut;
+		fut.task = task;
+
+		//Schedule
+		if(checkStatus() == Status::Complete) {
+			//Set arguments and schedule now
+			this->task.promise().pool.lock()->push(std::move(task));
+		} else {
+			//Add to continuation list
+			this->task.promise().next.emplace_back(task);
+		}
+
+		return fut;
+	}
+
+	template<typename F, typename... ExArgs>
+		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
+	void Future<void>::thenDetached(F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Wrap for argument binding and coroutine conversion
+		auto [task, argset] = corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+		task.arg1Set = argset;
+
+		//Schedule
+		if(checkStatus() == Status::Complete) {
+			//Set arguments and schedule now
+			this->task.promise().pool.lock()->push(std::move(task));
+		} else {
+			//Add to continuation list
+			this->task.promise().next.emplace_back(task);
+		}
+	}
+
+	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
+		requires std::invocable<F&&, const I&, ExArgs&&...>
+	[[nodiscard]] MultiFuture<R> Future<void>::thenBatch(Rn&& src, F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Generate & enqueue tasks
+		std::vector<Future<R>> futs;
+		for(const I& item : src) {
+			//Wrap for argument binding and coroutine conversion
+			auto [task, argset] = [this, &func, &item, &exargs...]() {
+				if constexpr(sizeof...(exargs) == 0) {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+				} else {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+				}
+			}();
+			task.arg1Set = argset;
+
+			//Create future object
+			Future<R> fut;
+			fut.task = task;
+			futs.push_back(std::move(fut));
+
+			//Schedule
+			if(checkStatus() == Status::Complete) {
+				//Set arguments and schedule now
+				this->task.promise().pool.lock()->push(std::move(task));
+			} else {
+				//Add to continuation list
+				this->task.promise().next.emplace_back(task);
+			}
+		}
+
+		//Create multi-future
+		MultiFuture<R> multifut(std::move(futs));
+		return multifut;
+	}
+
+	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
+		requires std::invocable<F&&, const I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const I&, ExArgs&&...>>
+	void Future<void>::thenBatchDetached(Rn&& src, F func, ExArgs... exargs) {
+		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
+		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
+
+		//Generate & enqueue tasks
+		for(const I& item : src) {
+			//Wrap for argument binding and coroutine conversion
+			auto [task, argset] = [this, &func, &item, &exargs...]() {
+				if constexpr(sizeof...(exargs) == 0) {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+				} else {
+					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+				}
+			}();
+			task.arg1Set = argset;
+
+			//Schedule
+			if(checkStatus() == Status::Complete) {
+				//Set arguments and schedule now
+				this->task.promise().pool.lock()->push(std::move(task));
+			} else {
+				//Add to continuation list
+				this->task.promise().next.emplace_back(task);
+			}
 		}
 	}
 }
