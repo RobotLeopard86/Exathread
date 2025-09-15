@@ -344,10 +344,10 @@
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a28aaff2fb37300740ee17c720e384dd0.html">Function exathread::yieldUntil</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1aac2e67e8ba092bccac27d7666e711e40.html">Template Function exathread::yieldUntilComplete(Future&lt;T&gt;)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1abc0969d496e65c390b2df623ac1b2f31.html">Template Function exathread::yieldUntilComplete(const Future&lt;T&gt;&amp;)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a0b98420b646ccfd224af5349f7dc680b.html">Template Function exathread::yieldUntilComplete(MultiFuture&lt;T&gt;)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1a25bb37704aec70764c275274e223a71d.html">Template Function exathread::yieldUntilComplete(const MultiFuture&lt;T&gt;&amp;)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="function_namespaceexathread_1adff1651c17c67ef4cc07a2798812ac92.html">Function exathread::yieldUntilTrue</a></li>
@@ -455,7 +455,10 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task fails </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -478,7 +481,10 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task fails </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -505,7 +511,10 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task fails </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -531,7 +540,10 @@
 </ul>
 </dd>
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">logic_error</span></span></span> – If the task fails </p></li>
+<li><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">bad_weak_ptr</span></span></span> – If the pool to which this future belongs no longer exists </p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
