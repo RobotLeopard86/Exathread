@@ -25,9 +25,8 @@ jobs:
           fetch-depth: 0
       - name: Create temporary directory for build
         run: |
-          git clone ${{ github.server_url }}/${{ github.repository }} /tmp/PAGESBUILD
-          git -C /tmp/PAGESBUILD checkout gh-pages
-          git pull
+          git clone ${{ github.server_url }}/${{ github.repository }} /tmp/PAGESBUILD -b gh-pages
+          git -C /tmp/PAGESBUILD pull
       - name: Install Python dependencies
         run: |
           pip install -r docs/requirements.txt

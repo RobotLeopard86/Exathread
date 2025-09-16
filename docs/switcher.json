@@ -3,5 +3,10 @@
         "name": "Latest development commit",
         "version": "main",
         "url": "https://robotleopard86.github.io/Exathread/latest"
+    },
+    {
+        "name": "1.0.0",
+        "version": "1.0.0",
+        "url": "https://robotleopard86.github.io/Exathread/1.0.0"
     }
 ]
