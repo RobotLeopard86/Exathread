@@ -19,9 +19,7 @@ Exathread is a powerful header-only C++ thread pool management library for C++20
 CMake and Meson build definitions are provided to make it easier to use the library, however you can also just copy `exathread.hpp` to wherever it's needed.  
 
 ## Testing
-Exathread comes with some tests which can be run either with CMake or Meson. Configure a build directory as usual for the build system, `cd` into the build directory, then run:  
-  Meson - `meson test`
-  CMake - `ctest`
+Exathread comes with some tests which can be run either with CMake or Meson. Configure a build directory as usual for the build system, `cd` into the build directory, then run `meson test` or `ctest` (for CMake) to run the tests.
 
 ## Documentation
 Documentation is built and deployed automatically to https://robotleopard86.github.io/Exathread.  
