@@ -249,7 +249,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const T&, ExArgs&&...>>
 			requires std::invocable<F&&, const T&, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after this future with no result
@@ -265,7 +265,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs>
 			requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
-		void thenDetached(F func, ExArgs... exargs);
+		void thenDetached(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a tracked batch job based on a container for execution after this future
@@ -285,7 +285,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, const T&, const I&, ExArgs&&...>>
 			requires std::invocable<F&&, const T&, const I&, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after this future with no result
@@ -304,7 +304,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
 			requires std::invocable<F&&, const T&, I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, const I&, ExArgs&&...>>
-		void thenBatchDetached(Rn&& src, F func, ExArgs... exargs);
+		void thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Obtain the task result, blocking if not complete
@@ -357,19 +357,19 @@ namespace exathread {
 
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, ExArgs&&...>>
 			requires std::invocable<F&&, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
 
 		template<typename F, typename... ExArgs>
 			requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
-		void thenDetached(F func, ExArgs... exargs);
+		void thenDetached(F&& func, ExArgs&&... exargs);
 
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, const I&, ExArgs&&...>>
 			requires std::invocable<F&&, const I&, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F&& func, ExArgs&&... exargs);
 
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
 			requires std::invocable<F&&, const I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const I&, ExArgs&&...>>
-		void thenBatchDetached(Rn&& src, F func, ExArgs... exargs);
+		void thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs);
 
 	  private:
 		Task task;
@@ -440,7 +440,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
 			requires std::invocable<F&&, std::vector<T>, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after these futures with no result
@@ -456,7 +456,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs>
 			requires std::invocable<F&&, std::vector<T>, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
-		void thenDetached(F func, ExArgs... exargs);
+		void thenDetached(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a tracked batch job based on a container for execution after these futures
@@ -477,7 +477,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, const T&, ExArgs&&...>>
 			requires std::invocable<F&&, const T&, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> thenBatch(F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> thenBatch(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after these futures with no result
@@ -497,7 +497,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... ExArgs>
 			requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
-		void thenBatchDetached(F func, ExArgs... exargs);
+		void thenBatchDetached(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Get the results of the futures, blocking if not complete
@@ -527,11 +527,11 @@ namespace exathread {
 
 		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, ExArgs&&...>>
 			requires std::invocable<F&&, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F func, ExArgs... exargs);
+		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
 
 		template<typename F, typename... ExArgs>
 			requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
-		void thenDetached(F func, ExArgs... exargs);
+		void thenDetached(F&& func, ExArgs&&... exargs);
 
 	  private:
 		std::vector<Future<void>> futures;
@@ -571,7 +571,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
 			requires std::invocable<F&&, Args&&...>
-		[[nodiscard]] Future<R> submit(F func, Args... args);
+		[[nodiscard]] Future<R> submit(F&& func, Args&&... args);
 
 		/**
 		 * @brief Submit a task into the pool with no result
@@ -584,7 +584,7 @@ namespace exathread {
 		 */
 		template<typename F, typename... Args>
 			requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
-		void submitDetached(F func, Args... args);
+		void submitDetached(F&& func, Args&&... args);
 
 		/**
 		 * @brief Submit a tracked batch job based on a container into the pool
@@ -601,7 +601,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, const I&, ExArgs&&...>>
 			requires std::invocable<F&&, const I&, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> batch(const Rn& src, F func, ExArgs... exargs);
+		[[nodiscard]] MultiFuture<R> batch(const Rn& src, F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Submit a batch job based on a container into the pool with no result
@@ -617,7 +617,7 @@ namespace exathread {
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
 			requires std::invocable<F&&, const I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const I&, ExArgs&&...>>
-		void batchDetached(const Rn& src, F func, ExArgs... exargs);
+		void batchDetached(const Rn& src, F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Get the number of worker threads managed the pool
@@ -770,7 +770,7 @@ namespace exathread {
 		void return_void() noexcept {}
 
 		Task get_return_object() noexcept override {
-			return VoidTask {std::coroutine_handle<details::Promise>::from_promise(*this)};
+			return Task {std::coroutine_handle<details::Promise>::from_promise(*this)};
 		}
 
 		void continuation() override {
@@ -793,7 +793,7 @@ namespace exathread {
 		}
 
 		Task get_return_object() noexcept override {
-			return ValueTask<T> {std::coroutine_handle<details::Promise>::from_promise(*this)};
+			return Task {std::coroutine_handle<details::Promise>::from_promise(*this)};
 		}
 
 		void continuation() override {
@@ -1222,7 +1222,7 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = [&]() {
+				R inner = [args, fn = std::forward<F>(fn)]() {
 					if constexpr(sizeof...(baseArgs) == 0) {
 						return fn();
 					} else {
@@ -1273,13 +1273,11 @@ namespace exathread {
 			} else {
 				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
 					//Run the function
-					co_return [&]() {
-						if constexpr(sizeof...(baseArgs) == 0) {
-							return fn();
-						} else {
-							return std::apply(fn, std::move(args->args));
-						}
-					}();
+					if constexpr(sizeof...(baseArgs) == 0) {
+						co_return fn();
+					} else {
+						co_return std::apply(fn, std::move(args->args));
+					}
 				};
 
 				//Set promise data
@@ -1418,13 +1416,13 @@ namespace exathread {
 
 	template<typename F, typename... Args, typename R>
 		requires std::invocable<F&&, Args&&...>
-	inline Future<R> Pool::submit(F func, Args... args) {
+	inline Future<R> Pool::submit(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &args...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), args...]() {
 			if constexpr(sizeof...(args) == 0) {
-				return corowrap(weak_from_this(), std::forward<F>(func));
+				return corowrap<F&&, void>(weak_from_this(), *func);
 			} else {
-				return corowrap(weak_from_this(), std::forward<F>(func), std::forward<Args...>(args...));
+				return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
 			}
 		}();
 
@@ -1441,13 +1439,13 @@ namespace exathread {
 
 	template<typename F, typename... Args>
 		requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
-	inline void Pool::submitDetached(F func, Args... args) {
+	inline void Pool::submitDetached(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &args...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), args...]() {
 			if constexpr(sizeof...(args) == 0) {
-				return corowrap(weak_from_this(), std::forward<F>(func));
+				return corowrap<F&&, void>(weak_from_this(), *func);
 			} else {
-				return corowrap(weak_from_this(), std::forward<F>(func), std::forward<Args...>(args...));
+				return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
 			}
 		}();
 
@@ -1457,16 +1455,16 @@ namespace exathread {
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
 		requires std::invocable<F&&, const I&, ExArgs&&...>
-	inline MultiFuture<R> Pool::batch(const Rn& src, F func, ExArgs... exargs) {
+	inline MultiFuture<R> Pool::batch(const Rn& src, F&& func, ExArgs&&... exargs) {
 		//Generate & enqueue tasks
 		std::vector<Future<R>> futs;
 		for(const I& item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, &func, &item, &exargs...]() {
+			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap(weak_from_this(), std::forward<F>(func), item);
+					return corowrap<F&&, void, const I&>(weak_from_this(), *func, item);
 				} else {
-					return corowrap(weak_from_this(), std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+					return corowrap<F&&, void, const I&, ExArgs...>(weak_from_this(), *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1486,15 +1484,15 @@ namespace exathread {
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
 		requires std::invocable<F&&, const I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const I&, ExArgs&&...>>
-	inline void Pool::batchDetached(const Rn& src, F func, ExArgs... exargs) {
+	inline void Pool::batchDetached(const Rn& src, F&& func, ExArgs&&... exargs) {
 		//Generate and enqueue tasks
 		for(const I& item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, &func, &item, &exargs...]() {
+			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap(weak_from_this(), std::forward<F>(func), item);
+					return corowrap<F&&, void, const I&>(weak_from_this(), *func, item);
 				} else {
-					return corowrap(weak_from_this(), std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+					return corowrap<F&&, void, const I&, ExArgs...>(weak_from_this(), *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1506,16 +1504,16 @@ namespace exathread {
 	template<typename T>
 	template<typename F, typename... ExArgs, typename R>
 		requires std::invocable<F&&, const T&, ExArgs&&...>
-	inline Future<R> Future<T>::then(F func, ExArgs... exargs) {
+	inline Future<R> Future<T>::then(F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(this->task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, const T&>(this->task.promise().pool, *func);
 			} else {
-				return corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, const T&, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
@@ -1540,16 +1538,16 @@ namespace exathread {
 	template<typename T>
 	template<typename F, typename... ExArgs>
 		requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
-	inline void Future<T>::thenDetached(F func, ExArgs... exargs) {
+	inline void Future<T>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(this->task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, const T&>, (this->task.promise().pool, *func);
 			} else {
-				return corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, const T&, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
@@ -1568,7 +1566,7 @@ namespace exathread {
 	template<typename T>
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
 		requires std::invocable<F&&, const T&, const I&, ExArgs&&...>
-	inline MultiFuture<R> Future<T>::thenBatch(Rn&& src, F func, ExArgs... exargs) {
+	inline MultiFuture<R> Future<T>::thenBatch(Rn&& src, F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
@@ -1576,11 +1574,11 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(const I& item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, &func, &item, &exargs...]() {
+			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+					return corowrap<F&&, const T&, const I&>(this->task.promise().pool, *func, item);
 				} else {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+					return corowrap<F&&, const T&, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 			task.promise().arg1Set = argset;
@@ -1609,18 +1607,18 @@ namespace exathread {
 	template<typename T>
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
 		requires std::invocable<F&&, const T&, I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, const I&, ExArgs&&...>>
-	inline void Future<T>::thenBatchDetached(Rn&& src, F func, ExArgs... exargs) {
+	inline void Future<T>::thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Generate & enqueue tasks
 		for(const I& item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, &func, &item, &exargs...]() {
+			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+					return corowrap<F&&, const T&, const I&>(this->task.promise().pool, *func, item);
 				} else {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+					return corowrap<F&&, const T&, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 			task.promise().arg1Set = argset;
@@ -1639,16 +1637,16 @@ namespace exathread {
 
 	template<typename F, typename... ExArgs, typename R>
 		requires std::invocable<F&&, ExArgs&&...>
-	inline Future<R> Future<void>::then(F func, ExArgs... exargs) {
+	inline Future<R> Future<void>::then(F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(this->task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, void>(this->task.promise().pool, *func);
 			} else {
-				return corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
@@ -1671,16 +1669,16 @@ namespace exathread {
 
 	template<typename F, typename... ExArgs>
 		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
-	inline void Future<void>::thenDetached(F func, ExArgs... exargs) {
+	inline void Future<void>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(this->task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, void>(this->task.promise().pool, *func);
 			} else {
-				return corowrap(this->task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
@@ -1697,7 +1695,7 @@ namespace exathread {
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
 		requires std::invocable<F&&, const I&, ExArgs&&...>
-	inline MultiFuture<R> Future<void>::thenBatch(Rn&& src, F func, ExArgs... exargs) {
+	inline MultiFuture<R> Future<void>::thenBatch(Rn&& src, F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
@@ -1705,11 +1703,11 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(const I& item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, &func, &item, &exargs...]() {
+			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+					return corowrap<F&&, void, const I&>(this->task.promise().pool, *func, item);
 				} else {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+					return corowrap<F&&, void, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 			task.promise().arg1Set = argset;
@@ -1736,18 +1734,18 @@ namespace exathread {
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
 		requires std::invocable<F&&, const I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const I&, ExArgs&&...>>
-	inline void Future<void>::thenBatchDetached(Rn&& src, F func, ExArgs... exargs) {
+	inline void Future<void>::thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Generate & enqueue tasks
 		for(const I& item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, &func, &item, &exargs...]() {
+			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item);
+					return corowrap<F&&, void, const I&>(this->task.promise().pool, *func, item);
 				} else {
-					return corowrap(this->task.promise().pool, std::forward<F>(func), item, std::forward<ExArgs...>(exargs...));
+					return corowrap<F&&, void, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 			task.promise().arg1Set = argset;
@@ -1766,22 +1764,22 @@ namespace exathread {
 	template<typename T>
 	template<typename F, typename... ExArgs, typename R>
 		requires std::invocable<F&&, std::vector<T>, ExArgs&&...>
-	inline Future<R> MultiFuture<T>::then(F func, ExArgs... exargs) {
+	inline Future<R> MultiFuture<T>::then(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F, std::vector<T>>(futures[0].task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
 			} else {
-				return corowrap<F, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [&]() -> VoidTask {
+		const auto executor = [this, task, exargs...]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
@@ -1791,7 +1789,7 @@ namespace exathread {
 				if constexpr(sizeof...(exargs) > 0) argset(exargs...);
 
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(task));
+				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
 			}
 		};
 
@@ -1806,22 +1804,22 @@ namespace exathread {
 	template<typename T>
 	template<typename F, typename... ExArgs>
 		requires std::invocable<F&&, std::vector<T>, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
-	inline void MultiFuture<T>::thenDetached(F func, ExArgs... exargs) {
+	inline void MultiFuture<T>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(futures[0].task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
 			} else {
-				return corowrap(futures[0].task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [&]() -> VoidTask {
+		const auto executor = [this, task, exargs...]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
@@ -1831,7 +1829,7 @@ namespace exathread {
 				argset(exargs...);
 
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(task));
+				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
 			}
 		};
 
@@ -1842,14 +1840,14 @@ namespace exathread {
 	template<typename T>
 	template<typename F, typename... ExArgs, typename R>
 		requires std::invocable<F&&, const T&, ExArgs&&...>
-	inline MultiFuture<R> MultiFuture<T>::thenBatch(F func, ExArgs... exargs) {
+	inline MultiFuture<R> MultiFuture<T>::thenBatch(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Continue on each future
 		std::vector<Future<R>> continues;
 		for(Future<T>& fut : futures) {
-			auto t = [this, &fut, &func, &exargs...]() {
+			auto t = [this, fut, func, exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
 					return fut.then(std::forward<F>(func));
 				} else {
@@ -1867,7 +1865,7 @@ namespace exathread {
 	template<typename T>
 	template<typename F, typename... ExArgs>
 		requires std::invocable<F&&, const T&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, const T&, ExArgs&&...>>
-	inline void MultiFuture<T>::thenBatchDetached(F func, ExArgs... exargs) {
+	inline void MultiFuture<T>::thenBatchDetached(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
@@ -1883,29 +1881,29 @@ namespace exathread {
 
 	template<typename F, typename... ExArgs, typename R>
 		requires std::invocable<F&&, ExArgs&&...>
-	inline Future<R> MultiFuture<void>::then(F func, ExArgs... exargs) {
+	inline Future<R> MultiFuture<void>::then(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(futures[0].task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
 			} else {
-				return corowrap(futures[0].task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [&]() -> VoidTask {
+		const auto executor = [this, task, exargs...]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
 			//If we succeded, we're good
 			if(checkStatus() == Status::Complete) {
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(task));
+				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
 			}
 		};
 
@@ -1919,29 +1917,29 @@ namespace exathread {
 
 	template<typename F, typename... ExArgs>
 		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
-	inline void MultiFuture<void>::thenDetached(F func, ExArgs... exargs) {
+	inline void MultiFuture<void>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, &func, &exargs...]() {
+		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap(futures[0].task.promise().pool, std::forward<F>(func));
+				return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
 			} else {
-				return corowrap(futures[0].task.promise().pool, std::forward<F>(func), std::forward<ExArgs...>(exargs...));
+				return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [&]() -> VoidTask {
+		const auto executor = [this, task, exargs...]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
 			//If we succeded, we're good
 			if(checkStatus() == Status::Complete) {
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(task));
+				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
 			}
 		};
 
