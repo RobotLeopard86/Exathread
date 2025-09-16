@@ -43,14 +43,16 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #pragma once
 
 #include <any>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <coroutine>
 #include <cstddef>
+#include <cstdint>
+#include <climits>
 #include <exception>
 #include <functional>
 #include <initializer_list>
-#include <machine/limits.h>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -924,14 +926,14 @@ namespace exathread {
 	inline details::ThreadData::ThreadData() {}
 
 	inline details::ThreadData::ThreadData(details::ThreadData&& o)
-	  : thread(std::exchange(o.thread, {})), yields(std::exchange(o.yields, {})), pool(std::exchange(o.pool, {})), myIndex(std::exchange(o.myIndex, SIZE_T_MAX)) {}
+	  : thread(std::exchange(o.thread, {})), yields(std::exchange(o.yields, {})), pool(std::exchange(o.pool, {})), myIndex(std::exchange(o.myIndex, SIZE_MAX)) {}
 
 	inline details::ThreadData& details::ThreadData::operator=(details::ThreadData&& o) {
 		if(this != &o) {
 			thread = std::exchange(o.thread, {});
 			yields = std::exchange(o.yields, {});
 			pool = std::exchange(o.pool, {});
-			myIndex = std::exchange(o.myIndex, SIZE_T_MAX);
+			myIndex = std::exchange(o.myIndex, SIZE_MAX);
 		}
 		return *this;
 	}

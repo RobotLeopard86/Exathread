@@ -1,10 +1,11 @@
 #include "../include/exathread.hpp"
 
 #include <cassert>
-#include <memory>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
+#include <memory>
+#include <vector>
 
 std::string reado(const std::string& fp) {
 	std::ifstream ifs(fp);
