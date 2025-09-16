@@ -41,7 +41,7 @@ exhale_args = {
     "afterTitleDescription": "Welcome to the Exathread documentation. Here you can find comprehensive API information. Check out the API map below.",
     "exhaleDoxygenStdin": dedent('''
 									INPUT = ../include/exathread.hpp
-                                    EXCLUDE_SYMBOLS = std,exathread::details*,exathread::corowrap*
+                                    EXCLUDE_SYMBOLS = std,exathread::details*
 									HIDE_UNDOC_MEMBERS = YES
 									MAX_INITIALIZER_LINES = 0
 									''')

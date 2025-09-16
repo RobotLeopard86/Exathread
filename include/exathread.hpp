@@ -726,6 +726,7 @@ namespace exathread {
 }
 
 //=============== IMPLEMENTATION ===============
+///@cond
 
 namespace exathread {
 	struct details::Promise {
@@ -1985,3 +1986,4 @@ namespace exathread {
 
 	inline std::size_t Pool::totalThreads = 0;
 }
+///@endcond
