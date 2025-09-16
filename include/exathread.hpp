@@ -109,7 +109,7 @@ namespace exathread {
 		/**
 		 * @brief Create a task managing a coroutine
 		 */
-		explicit Task(std::coroutine_handle<details::Promise> h) : h(h) {}
+		explicit Task(std::coroutine_handle<details::Promise> h);
 
 		/**
 		 * @brief Copy construction
@@ -736,6 +736,7 @@ namespace exathread {
 		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
 		std::vector<std::vector<Task>> next;  //The next task(s) to schedule after the completion of this one
 		std::function<void(std::any)> arg1Set;//The setter for the first argument (used for late-binding for continuations)
+		std::any lambdaSrc;					  //The source lambda object that generated the coroutine, if needed
 
 		void unhandled_exception() noexcept {
 			exception = std::current_exception();
@@ -807,14 +808,18 @@ namespace exathread {
 		}
 	};
 
+	inline Task::Task(std::coroutine_handle<details::Promise> h) : h(h) {
+		++(h.promise().handleRefCount);
+	}
+
 	inline Task::Task(const Task& other) noexcept : h(other.h) {
-		promise().handleRefCount++;
+		++(h.promise().handleRefCount);
 	}
 
 	inline Task& Task::operator=(const Task& other) noexcept {
 		if(this != &other) {
 			h = other.h;
-			promise().handleRefCount++;
+			++(h.promise().handleRefCount);
 		}
 		return *this;
 	}
@@ -876,7 +881,7 @@ namespace exathread {
 
 		void await_resume() {
 			//Mark the task as executing again
-			task.promise().status = Status::Executing;
+			if(task.handle()) task.promise().status = Status::Executing;
 		}
 	};
 
@@ -1135,7 +1140,7 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [args, fn = std::forward<F>(f)](details::Promise** dp) {
+			const auto wrap = [](decltype(args) a, decltype(f) fn, details::Promise** dp) {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1143,7 +1148,7 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = std::apply(fn, std::move(args->args));
+				R inner = std::apply(fn, std::move(a->args));
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
@@ -1159,39 +1164,42 @@ namespace exathread {
 			};
 
 			//Start task and update promise data
-			Task wrapped = wrap(&dp);
+			Task wrapped = wrap(args, std::forward<F>(f), &dp);
 			dp = &wrapped.promise();
 			wrapped.resume();
 			wrapped.promise().arg1Set = setArg1;
 			wrapped.promise().pool = p;
 			wrapped.promise().status = Status::Pending;
+			wrapped.promise().lambdaSrc = std::move(wrap);
 			return std::make_pair<R, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [args, fn = std::forward<F>(f)]() -> VoidTask {
+				const auto wrap = [](decltype(args) a, decltype(f) fn) -> VoidTask {
 					//Run the function
-					std::apply(fn, std::move(args->args));
+					std::apply(fn, std::move(a->args));
 					co_return;
 				};
 
 				//Set promise data
-				VoidTask wrapped = wrap();
+				VoidTask wrapped = wrap(args, std::forward<F>(f));
 				wrapped.promise().arg1Set = setArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
+				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<VoidTask, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			} else {
-				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
+				const auto wrap = [](decltype(args) a, decltype(f) fn) -> ValueTask<R> {
 					//Run the function
-					co_return std::apply(fn, std::move(args->args));
+					co_return std::apply(fn, std::move(a->args));
 				};
 
 				//Set promise data
-				ValueTask<R> wrapped = wrap();
+				ValueTask<R> wrapped = wrap(args, std::forward<F>(f));
 				wrapped.promise().arg1Set = setArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
+				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<ValueTask<R>, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			}
 		}
@@ -1214,7 +1222,7 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [args, fn = std::forward<F>(f)](details::Promise** dp) {
+			const auto wrap = [](decltype(args) a, decltype(f) fn, details::Promise** dp) {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1222,11 +1230,11 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = [args, fn = std::forward<F>(fn)]() {
+				R inner = [a, fn = std::forward<F>(fn)]() {
 					if constexpr(sizeof...(baseArgs) == 0) {
 						return fn();
 					} else {
-						return std::apply(fn, std::move(args->args));
+						return std::apply(fn, std::move(a->args));
 					}
 				}();
 				inner.promise().pool = promise->pool;
@@ -1244,47 +1252,50 @@ namespace exathread {
 			};
 
 			//Start task and update promise data
-			Task wrapped = wrap(&dp);
+			Task wrapped = wrap(args, std::forward<F>(f), &dp);
 			dp = &wrapped.promise();
 			wrapped.resume();
 			wrapped.promise().arg1Set = fakeSetArg1;
 			wrapped.promise().pool = p;
 			wrapped.promise().status = Status::Pending;
+			wrapped.promise().lambdaSrc = std::move(wrap);
 			return std::make_pair<R, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [args, fn = std::forward<F>(f)]() -> VoidTask {
+				const auto wrap = [](decltype(args) a, decltype(f) fn) -> VoidTask {
 					//Run the function
 					if constexpr(sizeof...(baseArgs) == 0) {
 						fn();
 					} else {
-						std::apply(fn, std::move(args->args));
+						std::apply(fn, std::move(a->args));
 					}
 					co_return;
 				};
 
 				//Set promise data
-				VoidTask wrapped = wrap();
+				VoidTask wrapped = wrap(args, std::forward<F>(f));
 				wrapped.promise().arg1Set = fakeSetArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
+				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			} else {
-				const auto wrap = [args, fn = std::forward<F>(f)]() -> ValueTask<R> {
+				const auto wrap = [](decltype(args) a, decltype(f) fn) -> ValueTask<R> {
 					//Run the function
 					if constexpr(sizeof...(baseArgs) == 0) {
-						co_return fn();
+						co_return (*fn)();
 					} else {
-						co_return std::apply(fn, std::move(args->args));
+						co_return std::apply(*fn, std::move(a->args));
 					}
 				};
 
 				//Set promise data
-				ValueTask<R> wrapped = wrap();
+				ValueTask<R> wrapped = wrap(args, std::forward<F>(f));
 				wrapped.promise().arg1Set = fakeSetArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
+				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<ValueTask<R>, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			}
 		}
@@ -1327,20 +1338,31 @@ namespace exathread {
 
 			//Reserve slot in ring buffer (CAS)
 			uint64_t fh0 = 0, fh1 = 0;
+			bool reset = false;
 			do {
 				//Advance indices
 				fh0 = frontHead.load(std::memory_order_acquire);
 				fh1 = fh0 + 1;
 
 				//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
-				if(fh1 < frontTail.load(std::memory_order_acquire)) continue;
+				if(fh1 < frontTail.load(std::memory_order_acquire)) {
+					reset = true;
+					break;
+				}
 
 				//Wrap-around prevention (head can't wrap around past tail)
-				if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) continue;
+				if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) {
+					reset = true;
+					break;
+				}
 
 				//Index pass prevention (front can't get ahead of back)
-				if(fh1 > backTail.load(std::memory_order_acquire)) continue;
+				if(fh1 > backTail.load(std::memory_order_acquire)) {
+					reset = true;
+					break;
+				}
 			} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
+			if(reset) continue;
 
 			//Read from safe slot
 			Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
@@ -1779,14 +1801,14 @@ namespace exathread {
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task, exargs...]() -> VoidTask {
+		const auto executor = [this, task, argset]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
 			//If we succeded, we're good
 			if(checkStatus() == Status::Complete) {
 				//Bind results
-				if constexpr(sizeof...(exargs) > 0) argset(exargs...);
+				argset(results());
 
 				//Schedule continuation
 				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
@@ -1795,6 +1817,9 @@ namespace exathread {
 
 		//Schedule executor task
 		VoidTask vt = executor();
+		vt.promise().pool = futures[0].task.promise().pool;
+		vt.promise().status = Status::Pending;
+		vt.promise().lambdaSrc = std::move(executor);
 		Future<R> fut;
 		fut.task = vt;
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
@@ -1819,14 +1844,14 @@ namespace exathread {
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task, exargs...]() -> VoidTask {
+		const auto executor = [this, task, argset]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
 			//If we succeded, we're good
 			if(checkStatus() == Status::Complete) {
 				//Bind results
-				argset(exargs...);
+				argset(results());
 
 				//Schedule continuation
 				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
@@ -1834,7 +1859,11 @@ namespace exathread {
 		};
 
 		//Schedule executor task
-		futures[0].task.promise().pool.lock()->push(std::move(executor()));
+		VoidTask vt = executor();
+		vt.promise().pool = futures[0].task.promise().pool;
+		vt.promise().status = Status::Pending;
+		vt.promise().lambdaSrc = std::move(executor);
+		futures[0].task.promise().pool.lock()->push(std::move(vt));
 	}
 
 	template<typename T>
@@ -1896,7 +1925,7 @@ namespace exathread {
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task, exargs...]() -> VoidTask {
+		const auto executor = [this, task]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
@@ -1909,6 +1938,9 @@ namespace exathread {
 
 		//Schedule executor task
 		VoidTask vt = executor();
+		vt.promise().pool = futures[0].task.promise().pool;
+		vt.promise().status = Status::Pending;
+		vt.promise().lambdaSrc = std::move(executor);
 		Future<R> fut;
 		fut.task = vt;
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
@@ -1932,7 +1964,7 @@ namespace exathread {
 		task.promise().arg1Set = argset;
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task, exargs...]() -> VoidTask {
+		const auto executor = [this, task]() -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(*this);
 
@@ -1944,7 +1976,11 @@ namespace exathread {
 		};
 
 		//Schedule executor task
-		futures[0].task.promise().pool.lock()->push(std::move(executor()));
+		VoidTask vt = executor();
+		vt.promise().pool = futures[0].task.promise().pool;
+		vt.promise().status = Status::Pending;
+		vt.promise().lambdaSrc = std::move(executor);
+		futures[0].task.promise().pool.lock()->push(std::move(vt));
 	}
 
 	inline std::size_t Pool::totalThreads = 0;

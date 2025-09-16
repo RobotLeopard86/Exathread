@@ -30,3 +30,6 @@ docs/*
 !docs/README.md
 !docs/requirements.txt
 !docs/switcher.json
+
+# Don't send build directories
+build
