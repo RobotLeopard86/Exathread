@@ -1122,17 +1122,10 @@ namespace exathread {
 		requires(!std::is_void_v<Arg1>)
 	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
 		std::shared_ptr<std::optional<Arg1>> a1 = std::make_shared<std::optional<Arg1>>(std::nullopt);
-		printf("Lambda decl: optional has value? %s\n", a1->has_value() ? "yep" : "nope");
 		const auto setArg1 = [a1](std::any val) {
-			printf("Lambda start: optional has value? %s\n", a1->has_value() ? "yep" : "nope");
 			std::decay_t<Arg1> a1v = std::any_cast<std::decay_t<Arg1>>(std::move(val));
-			auto& dst = a1->value();
-			auto src_data = a1v.data();
-			auto dst_data = dst.data();
-			printf("Before move: dst=%p size=%zu cap=%zu data=%p | src=%p size=%zu cap=%zu data=%p\n",
-				&dst, dst.size(), dst.capacity(), dst_data,
-				&a1v, a1v.size(), a1v.capacity(), src_data);
-			dst = std::move(a1v);
+			a1->reset();
+			a1->emplace(std::move(a1v));
 		};
 
 		//Actual function wrapping
