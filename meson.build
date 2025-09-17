@@ -15,4 +15,4 @@ if host_machine.system() == 'windows'
 	endif
 endif
 
-test('testeroo', executable('testeroo', 'test' / 'testeroo.cpp', cpp_args: defs), workdir: meson.project_source_root() / 'test')
+test('testeroo', executable('testeroo', 'test' / 'testeroo.cpp', cpp_args: [defs], dependencies: []), workdir: meson.project_source_root() / 'test')

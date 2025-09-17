@@ -49,7 +49,6 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #include <coroutine>
 #include <cstddef>
 #include <cstdint>
-#include <climits>
 #include <exception>
 #include <functional>
 #include <initializer_list>
@@ -1119,23 +1118,21 @@ namespace exathread {
 		}
 	}
 
-	template<typename... Args>
-	struct details::ArgsHolder {
-		std::tuple<std::decay_t<Args>...> args;
-	};
-
 	template<typename F, typename Arg1, typename... Args, typename R = std::invoke_result_t<F&&, Arg1, Args&&...>>
 		requires(!std::is_void_v<Arg1>)
 	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
-		//Set up argument holder
-		std::shared_ptr<details::ArgsHolder<Arg1, Args...>> args = std::make_shared<details::ArgsHolder<Arg1, Args...>>();
-		args->args = std::tuple<std::decay_t<Arg1>, std::decay_t<Args>...>();
-		if constexpr(sizeof...(baseArgs) > 0) std::get<Args...>(args->args) = std::move(baseArgs...);
-
-		//Set up first argument setter
-		const auto setArg1 = [args](std::any val) {
-			Arg1 a1 = std::any_cast<Arg1>(val);
-			std::get<Arg1>(args->args) = std::move(a1);
+		std::shared_ptr<std::optional<Arg1>> a1 = std::make_shared<std::optional<Arg1>>(std::nullopt);
+		printf("Lambda decl: optional has value? %s\n", a1->has_value() ? "yep" : "nope");
+		const auto setArg1 = [a1](std::any val) {
+			printf("Lambda start: optional has value? %s\n", a1->has_value() ? "yep" : "nope");
+			std::decay_t<Arg1> a1v = std::any_cast<std::decay_t<Arg1>>(std::move(val));
+			auto& dst = a1->value();
+			auto src_data = a1v.data();
+			auto dst_data = dst.data();
+			printf("Before move: dst=%p size=%zu cap=%zu data=%p | src=%p size=%zu cap=%zu data=%p\n",
+				&dst, dst.size(), dst.capacity(), dst_data,
+				&a1v, a1v.size(), a1v.capacity(), src_data);
+			dst = std::move(a1v);
 		};
 
 		//Actual function wrapping
@@ -1143,7 +1140,7 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(args) a, decltype(f) fn, details::Promise** dp) {
+			const auto wrap = [](decltype(f) fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, Args&&... a) {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1151,7 +1148,7 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = std::apply(fn, std::move(a->args));
+				R inner = fn(a1->value(), a...);
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
@@ -1167,7 +1164,7 @@ namespace exathread {
 			};
 
 			//Start task and update promise data
-			Task wrapped = wrap(args, std::forward<F>(f), &dp);
+			Task wrapped = wrap(std::forward<F>(f), &dp, a1, baseArgs...);
 			dp = &wrapped.promise();
 			wrapped.resume();
 			wrapped.promise().arg1Set = setArg1;
@@ -1178,27 +1175,27 @@ namespace exathread {
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [](decltype(args) a, decltype(f) fn) -> VoidTask {
+				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args&&... a) -> VoidTask {
 					//Run the function
-					std::apply(fn, std::move(a->args));
+					fn(a1->value(), a...);
 					co_return;
 				};
 
 				//Set promise data
-				VoidTask wrapped = wrap(args, std::forward<F>(f));
+				VoidTask wrapped = wrap(std::forward<F>(f), a1, baseArgs...);
 				wrapped.promise().arg1Set = setArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
 				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<VoidTask, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			} else {
-				const auto wrap = [](decltype(args) a, decltype(f) fn) -> ValueTask<R> {
+				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args&&... a) -> ValueTask<R> {
 					//Run the function
-					co_return std::apply(fn, std::move(a->args));
+					co_return fn(a1->value(), a...);
 				};
 
 				//Set promise data
-				ValueTask<R> wrapped = wrap(args, std::forward<F>(f));
+				ValueTask<R> wrapped = wrap(std::forward<F>(f), a1, baseArgs...);
 				wrapped.promise().arg1Set = setArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
@@ -1211,21 +1208,14 @@ namespace exathread {
 	template<typename F, typename Arg1 = void, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
 		requires std::is_void_v<Arg1>
 	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
-		//Set up argument holder
-		std::shared_ptr<details::ArgsHolder<Args...>> args = std::make_shared<details::ArgsHolder<Args...>>();
-		args->args = std::tuple<std::decay_t<Args>...>(baseArgs...);
-
-		//Make a fake first argument setter
-		const auto fakeSetArg1 = [args](std::any) {
-			throw std::runtime_error("no");
-		};
+		const auto fakeSetArg1 = [](std::any) {};
 
 		//Actual function wrapping
 
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(args) a, decltype(f) fn, details::Promise** dp) {
+			const auto wrap = [](decltype(f) fn, details::Promise** dp, Args&&... a) {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1233,13 +1223,7 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = [a, fn = std::forward<F>(fn)]() {
-					if constexpr(sizeof...(baseArgs) == 0) {
-						return fn();
-					} else {
-						return std::apply(fn, std::move(a->args));
-					}
-				}();
+				R inner = fn(a...);
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
@@ -1255,7 +1239,7 @@ namespace exathread {
 			};
 
 			//Start task and update promise data
-			Task wrapped = wrap(args, std::forward<F>(f), &dp);
+			Task wrapped = wrap(std::forward<F>(f), &dp, baseArgs...);
 			dp = &wrapped.promise();
 			wrapped.resume();
 			wrapped.promise().arg1Set = fakeSetArg1;
@@ -1266,35 +1250,27 @@ namespace exathread {
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [](decltype(args) a, decltype(f) fn) -> VoidTask {
+				const auto wrap = [](decltype(f) fn, Args&&... a) -> VoidTask {
 					//Run the function
-					if constexpr(sizeof...(baseArgs) == 0) {
-						fn();
-					} else {
-						std::apply(fn, std::move(a->args));
-					}
+					fn(a...);
 					co_return;
 				};
 
 				//Set promise data
-				VoidTask wrapped = wrap(args, std::forward<F>(f));
+				VoidTask wrapped = wrap(std::forward<F>(f), baseArgs...);
 				wrapped.promise().arg1Set = fakeSetArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
 				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			} else {
-				const auto wrap = [](decltype(args) a, decltype(f) fn) -> ValueTask<R> {
+				const auto wrap = [](decltype(f) fn, Args&&... a) -> ValueTask<R> {
 					//Run the function
-					if constexpr(sizeof...(baseArgs) == 0) {
-						co_return (*fn)();
-					} else {
-						co_return std::apply(*fn, std::move(a->args));
-					}
+					co_return fn(a...);
 				};
 
 				//Set promise data
-				ValueTask<R> wrapped = wrap(args, std::forward<F>(f));
+				ValueTask<R> wrapped = wrap(std::forward<F>(f), baseArgs...);
 				wrapped.promise().arg1Set = fakeSetArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
