@@ -411,8 +411,8 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK9exathread6Future5awaitEv">
-<span id="_CPPv3NK9exathread6Future5awaitEv"></span><span id="_CPPv2NK9exathread6Future5awaitEv"></span><span id="exathread::Future::awaitC"></span><span class="target" id="classexathread_1_1Future_1a0c558be05dabb9066151d75f72b5a57c"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">await</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK9exathread6Future5awaitEv" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread6Future5awaitEv">
+<span id="_CPPv3N9exathread6Future5awaitEv"></span><span id="_CPPv2N9exathread6Future5awaitEv"></span><span id="exathread::Future::await"></span><span class="target" id="classexathread_1_1Future_1a7e3f536eb668dca8965430954fcc7c17"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">await</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread6Future5awaitEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Block until execution has completed, successfully or not. </p>
 </dd></dl>
 
@@ -584,21 +584,6 @@
 </dl>
 </dd></dl>
 
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK9exathread6FutureptEv">
-<span id="_CPPv3NK9exathread6FutureptEv"></span><span id="_CPPv2NK9exathread6FutureptEv"></span><span id="exathread::Future::pointer-operatorC"></span><span class="target" id="classexathread_1_1Future_1aba724039dcf46e84468e1dfa026734b6"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN9exathread6FutureE" title="exathread::Future::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">-&gt;</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK9exathread6FutureptEv" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Obtain the task result, blocking if not complete. </p>
-<p>This function does not exist in the <code class="docutils literal notranslate"><span class="pre">void</span></code> specialization of this type</p>
-<dl class="field-list simple">
-<dt class="field-odd">Throws<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">The</span></span></span> – exception thrown by the task if failed </p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The result of the task</p>
-</dd>
-</dl>
-</dd></dl>
-
 </div>
 </dd></dl>
 
@@ -654,7 +639,7 @@
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-documentation">Class Documentation</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN9exathread6FutureE"><code class="docutils literal notranslate"><span class="pre">Future</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread6Future5awaitEv"><code class="docutils literal notranslate"><span class="pre">Future::await()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6Future5awaitEv"><code class="docutils literal notranslate"><span class="pre">Future::await()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread6Future11checkStatusEv"><code class="docutils literal notranslate"><span class="pre">Future::checkStatus()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0Dp0EN9exathread6Future4thenE6FutureI1RERR1FDpRR6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::then()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN9exathread6Future12thenDetachedEvRR1FDpRR6ExArgs"><code class="docutils literal notranslate"><span class="pre">Future::thenDetached()</span></code></a></li>
@@ -663,7 +648,6 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6FuturemlEv"><code class="docutils literal notranslate"><span class="pre">Future::operator*()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread6FuturemlEv"><code class="docutils literal notranslate"><span class="pre">Future::operator*()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread6FutureptEv"><code class="docutils literal notranslate"><span class="pre">Future::operator-&gt;()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread6FutureptEv"><code class="docutils literal notranslate"><span class="pre">Future::operator-&gt;()</span></code></a></li>
 </ul>
 </li>
 </ul>
