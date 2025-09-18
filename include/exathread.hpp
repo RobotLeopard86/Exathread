@@ -1121,7 +1121,7 @@ namespace exathread {
 	template<typename F, typename Arg1, typename... Args, typename R = std::invoke_result_t<F&&, Arg1, Args&&...>>
 		requires(!std::is_void_v<Arg1>)
 	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
-		std::shared_ptr<std::optional<Arg1>> a1 = std::make_shared<std::optional<Arg1>>(std::nullopt);
+		std::shared_ptr<std::optional<Arg1>> a1 = std::shared_ptr<std::optional<Arg1>>(new std::optional<Arg1>(std::nullopt));
 		const auto setArg1 = [a1](std::any val) {
 			std::decay_t<Arg1> a1v = std::any_cast<std::decay_t<Arg1>>(std::move(val));
 			a1->reset();
@@ -1510,7 +1510,7 @@ namespace exathread {
 				return corowrap<F&&, const T&, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Create future
 		Future<R> fut;
@@ -1544,7 +1544,7 @@ namespace exathread {
 				return corowrap<F&&, const T&, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Schedule
 		if(checkStatus() == Status::Complete) {
@@ -1575,7 +1575,7 @@ namespace exathread {
 					return corowrap<F&&, const T&, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-			task.promise().arg1Set = argset;
+
 
 			//Create future object
 			Future<R> fut;
@@ -1615,7 +1615,7 @@ namespace exathread {
 					return corowrap<F&&, const T&, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-			task.promise().arg1Set = argset;
+
 
 			//Schedule
 			if(checkStatus() == Status::Complete) {
@@ -1643,7 +1643,7 @@ namespace exathread {
 				return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Create future
 		Future<R> fut;
@@ -1675,7 +1675,7 @@ namespace exathread {
 				return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Schedule
 		if(checkStatus() == Status::Complete) {
@@ -1704,7 +1704,7 @@ namespace exathread {
 					return corowrap<F&&, void, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-			task.promise().arg1Set = argset;
+
 
 			//Create future object
 			Future<R> fut;
@@ -1742,7 +1742,7 @@ namespace exathread {
 					return corowrap<F&&, void, const I&, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-			task.promise().arg1Set = argset;
+
 
 			//Schedule
 			if(checkStatus() == Status::Complete) {
@@ -1770,25 +1770,25 @@ namespace exathread {
 				return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task, argset]() -> VoidTask {
+		const auto executor = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
-			co_await yieldUntilComplete(*this);
+			co_await yieldUntilComplete(multifut);
 
 			//If we succeded, we're good
-			if(checkStatus() == Status::Complete) {
+			if(multifut.checkStatus() == Status::Complete) {
 				//Bind results
-				argset(results());
+				setargs(multifut.results());
 
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
+				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
 			}
 		};
 
 		//Schedule executor task
-		VoidTask vt = executor();
+		VoidTask vt = executor(*this, task, std::move(argset));
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
 		vt.promise().lambdaSrc = std::move(executor);
@@ -1813,25 +1813,25 @@ namespace exathread {
 				return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task, argset]() -> VoidTask {
+		const auto executor = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
-			co_await yieldUntilComplete(*this);
+			co_await yieldUntilComplete(multifut);
 
 			//If we succeded, we're good
-			if(checkStatus() == Status::Complete) {
+			if(multifut.checkStatus() == Status::Complete) {
 				//Bind results
-				argset(results());
+				setargs(multifut.results());
 
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
+				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
 			}
 		};
 
 		//Schedule executor task
-		VoidTask vt = executor();
+		VoidTask vt = executor(*this, task, std::move(argset));
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
 		vt.promise().lambdaSrc = std::move(executor);
@@ -1894,7 +1894,7 @@ namespace exathread {
 				return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Create a task to wait until all results are collected and then run the continuation
 		const auto executor = [this, task]() -> VoidTask {
@@ -1933,7 +1933,7 @@ namespace exathread {
 				return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
 			}
 		}();
-		task.promise().arg1Set = argset;
+
 
 		//Create a task to wait until all results are collected and then run the continuation
 		const auto executor = [this, task]() -> VoidTask {

@@ -16,7 +16,7 @@ std::string reado(const std::string& fp) {
 
 void printo(std::vector<std::string> results) {
 	for(const std::string& s : results) {
-		std::cout << s << std::endl;
+		std::cout << "Got \"" << s << "\"" << std::endl;
 	}
 }
 
