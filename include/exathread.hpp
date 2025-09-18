@@ -1145,6 +1145,7 @@ namespace exathread {
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
+				inner.promise().lambdaSrc = std::move(fn);
 				inner.resume();
 
 				//Await and return logic
@@ -1220,6 +1221,7 @@ namespace exathread {
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
+				inner.promise().lambdaSrc = std::move(fn);
 				inner.resume();
 
 				//Await and return logic
