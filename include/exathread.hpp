@@ -967,7 +967,14 @@ namespace exathread {
 	inline T& Future<T>::operator*() {
 		if(checkStatus() != Status::Complete) await();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
-		if(vp.exception) std::rethrow_exception(vp.exception);
+		if(vp.exception) {
+			try {
+				std::rethrow_exception(vp.exception);
+			} catch(const std::exception& e) {
+				printf("%s\n", e.what());
+			}
+			std::rethrow_exception(vp.exception);
+		}
 		return vp.val.value();
 	}
 
@@ -975,7 +982,14 @@ namespace exathread {
 	inline const T& Future<T>::operator*() const {
 		if(checkStatus() != Status::Complete) await();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
-		if(vp.exception) std::rethrow_exception(vp.exception);
+		if(vp.exception) {
+			try {
+				std::rethrow_exception(vp.exception);
+			} catch(const std::exception& e) {
+				printf("%s\n", e.what());
+			}
+			std::rethrow_exception(vp.exception);
+		}
 		return vp.val.value();
 	}
 
@@ -983,7 +997,14 @@ namespace exathread {
 	inline T* Future<T>::operator->() {
 		if(checkStatus() != Status::Complete) await();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
-		if(vp.exception) std::rethrow_exception(vp.exception);
+		if(vp.exception) {
+			try {
+				std::rethrow_exception(vp.exception);
+			} catch(const std::exception& e) {
+				printf("%s\n", e.what());
+			}
+			std::rethrow_exception(vp.exception);
+		}
 		return vp.val.value();
 	}
 
