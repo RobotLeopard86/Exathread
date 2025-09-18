@@ -1112,6 +1112,7 @@ namespace exathread {
 						continue;
 					}
 					t.promise().threadIdx = data.myIndex;
+					t.promise().status = Status::Executing;
 					t.resume();
 				} catch(...) {}
 			}
@@ -1133,7 +1134,7 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(f) fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, Args&&... a) {
+			const auto wrap = [](decltype(f) fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, Args... a) {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1169,7 +1170,7 @@ namespace exathread {
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args&&... a) -> VoidTask {
+				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args... a) -> VoidTask {
 					//Run the function
 					fn(a1->value(), a...);
 					co_return;
@@ -1183,7 +1184,7 @@ namespace exathread {
 				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<VoidTask, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			} else {
-				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args&&... a) -> ValueTask<R> {
+				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args... a) -> ValueTask<R> {
 					//Run the function
 					co_return fn(a1->value(), a...);
 				};
@@ -1209,7 +1210,7 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<R, Task>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(f) fn, details::Promise** dp, Args&&... a) {
+			const auto wrap = [](decltype(f) fn, details::Promise** dp, Args... a) {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1245,7 +1246,7 @@ namespace exathread {
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [](decltype(f) fn, Args&&... a) -> VoidTask {
+				const auto wrap = [](decltype(f) fn, Args... a) -> VoidTask {
 					//Run the function
 					fn(a...);
 					co_return;
@@ -1259,7 +1260,7 @@ namespace exathread {
 				wrapped.promise().lambdaSrc = std::move(wrap);
 				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			} else {
-				const auto wrap = [](decltype(f) fn, Args&&... a) -> ValueTask<R> {
+				const auto wrap = [](decltype(f) fn, Args... a) -> ValueTask<R> {
 					//Run the function
 					co_return fn(a...);
 				};

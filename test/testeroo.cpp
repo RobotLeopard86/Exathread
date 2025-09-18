@@ -5,16 +5,21 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
-std::string reado(const std::string& fp) {
+std::string reado(std::string fp) {
 	std::ifstream ifs(fp);
 	std::stringstream ss;
 	ss << ifs.rdbuf();
+	std::stringstream writemsg;
+	writemsg << "Read \"" << ss.str() << "\"" << std::endl;
+	std::cout << writemsg.str();
 	return ss.str();
 }
 
 void printo(std::vector<std::string> results) {
+	std::cout << "------" << std::endl;
 	for(const std::string& s : results) {
 		std::cout << "Got \"" << s << "\"" << std::endl;
 	}
