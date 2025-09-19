@@ -40,10 +40,6 @@ int main() {
 		{"E is for Elephant (I know it's not a fruit but what are you going to do about it)", false}};
 	for(const std::string& str : results) {
 		if(check.contains(str)) check.at(str) = true;
-		try {
-			std::string r = (check.at(str) ? "yup" : "nah");
-			std::cout << str << ": " << r << std::endl;
-		} catch(...) {}
 	}
 	std::cout << "------" << std::endl;
 	for(const auto& [s, v] : check) {
