@@ -199,7 +199,7 @@ namespace exathread {
 	 *
 	 * @note Set this as your submitted function's return type if it returns something other than @c void and wants to use yield operations
 	 *
-	 * @tparam The return type of your function (this has no effect and only exists for readability purposes)
+	 * @tparam T The return type of your function
 	 */
 	template<typename T>
 		requires(!std::is_void_v<T>)
