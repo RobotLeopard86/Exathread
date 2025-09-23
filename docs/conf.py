@@ -71,6 +71,6 @@ html_theme_options = {
    "navbar_start": ["navbar-logo", "version-switcher"],
    "switcher": {
         "version_match": version,
-        "json_url": "https://raw.githubusercontent.com/RobotLeopard86/Exathread/main/docs/switcher.json"
+        "json_url": "https://raw.githubusercontent.com/RobotLeopard86/Exathread/refs/heads/main/docs/switcher.json"
     }
 }
