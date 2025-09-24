@@ -1435,7 +1435,7 @@ namespace exathread {
 	}
 
 	inline void Pool::waitIdle() const noexcept {
-		while(queueSize() >= 0) std::this_thread::yield();
+		while(queueSize() > 0) std::this_thread::yield();
 	}
 
 	inline Pool::Pool(std::size_t threadCount) {
@@ -1480,15 +1480,27 @@ namespace exathread {
 		totalThreads -= threads.size();
 	}
 
+	template<typename T>
+	struct is_function_like : std::is_function<std::remove_pointer_t<std::remove_reference_t<T>>> {};
+
+	template<typename T>
+	inline constexpr bool is_function_like_v = is_function_like<T>::value;
+
 	template<typename F, typename... Args, typename R>
 		requires std::invocable<F&&, Args&&...>
 	inline Future<R> Pool::submit(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), args...]() {
+		auto [task, argset] = [this, func = std::move(func), args...]() mutable {
 			if constexpr(sizeof...(args) == 0) {
-				return corowrap<F&&, void>(weak_from_this(), *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void>(weak_from_this(), *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, void>(weak_from_this(), std::move(func));
 			} else {
-				return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
+				else
+					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args...>(args...));
 			}
 		}();
 
@@ -1507,11 +1519,17 @@ namespace exathread {
 		requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
 	inline void Pool::submitDetached(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), args...]() {
+		auto [task, argset] = [this, func = std::move(func), args...]() mutable {
 			if constexpr(sizeof...(args) == 0) {
-				return corowrap<F&&, void>(weak_from_this(), *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void>(weak_from_this(), *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, void>(weak_from_this(), std::move(func));
 			} else {
-				return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
+				else
+					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args...>(args...));
 			}
 		}();
 
@@ -1526,11 +1544,17 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
+			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap<F&&, void, I>(weak_from_this(), *func, I {item});
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I>(weak_from_this(), *func, I {item});
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I>(weak_from_this(), std::move(func), I {item});
 				} else {
-					return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {item}, std::forward<ExArgs...>(exargs...));
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {item}, std::forward<ExArgs...>(exargs...));
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1554,11 +1578,17 @@ namespace exathread {
 		//Generate and enqueue tasks
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
+			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap<F&&, void, I>(weak_from_this(), *func, I {item});
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I>(weak_from_this(), *func, I {item});
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I>(weak_from_this(), std::move(func), I {item});
 				} else {
-					return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, item, std::forward<ExArgs...>(exargs...));
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {item}, std::forward<ExArgs...>(exargs...));
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1578,14 +1608,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, T>(this->task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, T>(this->task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, T>(this->task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, T, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, T, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, T, ExArgs...>(this->task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Create future
 		Future<R> fut;
@@ -1615,14 +1650,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, T>, (this->task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, T>(this->task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, T>(this->task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, T, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, T, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, T, ExArgs...>(this->task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Schedule
 		if(checkStatus() == Status::Complete) {
@@ -1649,14 +1689,19 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
+			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {item});
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {item});
+					else
+						return corowrap<std::remove_cvref_t<F>, T, I>(this->task.promise().pool, std::move(func), I {item});
 				} else {
-					return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+					else
+						return corowrap<std::remove_cvref_t<F>, T, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-
 
 			//Create future object
 			Future<R> fut;
@@ -1692,14 +1737,19 @@ namespace exathread {
 		//Generate & enqueue tasks
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
+			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {item});
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {item});
+					else
+						return corowrap<std::remove_cvref_t<F>, T, I>(this->task.promise().pool, std::move(func), I {item});
 				} else {
-					return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+					else
+						return corowrap<std::remove_cvref_t<F>, T, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-
 
 			//Schedule
 			if(checkStatus() == Status::Complete) {
@@ -1720,14 +1770,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, void>(this->task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void>(this->task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, void>(this->task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, void, ExArgs...>(this->task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Create future
 		Future<R> fut;
@@ -1752,14 +1807,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, void>(this->task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void>(this->task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, void>(this->task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void, ExArgs...>(this->task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, void, ExArgs...>(this->task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Schedule
 		if(checkStatus() == Status::Complete) {
@@ -1781,14 +1841,19 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
+			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {item});
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {item});
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I>(this->task.promise().pool, std::move(func), I {item});
 				} else {
-					return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-
 
 			//Create future object
 			Future<R> fut;
@@ -1819,14 +1884,19 @@ namespace exathread {
 		//Generate & enqueue tasks
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::forward<F>(func), item, exargs...]() {
+			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
-					return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {item});
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {item});
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I>(this->task.promise().pool, std::move(func), I {item});
 				} else {
-					return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, item, std::forward<ExArgs...>(exargs...));
+					if constexpr(is_function_like_v<F>)
+						return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+					else
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
-
 
 			//Schedule
 			if(checkStatus() == Status::Complete) {
@@ -1850,14 +1920,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, std::vector<T>>(futures[0].task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Create a task to wait until all results are collected and then run the continuation
 		const auto executor = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
@@ -1896,14 +1971,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, std::vector<T>>(futures[0].task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, std::vector<T>, ExArgs...>(futures[0].task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Create a task to wait until all results are collected and then run the continuation
 		const auto executor = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
@@ -1983,14 +2063,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, void>(futures[0].task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, void, ExArgs...>(futures[0].task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Create a task to wait until all results are collected and then run the continuation
 		const auto executor = [this, task]() -> VoidTask {
@@ -2022,14 +2107,19 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::forward<F>(func), exargs...]() {
+		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
-				return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
+				else
+					return corowrap<std::remove_cvref_t<F>, void>(futures[0].task.promise().pool, std::move(func));
 			} else {
-				return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				if constexpr(is_function_like_v<F>)
+					return corowrap<F&&, void, ExArgs...>(futures[0].task.promise().pool, *func, std::forward<ExArgs...>(exargs...));
+				else
+					return corowrap<std::remove_cvref_t<F>, void, ExArgs...>(futures[0].task.promise().pool, std::move(func), std::forward<ExArgs...>(exargs...));
 			}
 		}();
-
 
 		//Create a task to wait until all results are collected and then run the continuation
 		const auto executor = [this, task]() -> VoidTask {
