@@ -563,7 +563,7 @@ namespace exathread {
 	template<>
 	class MultiFuture<void> {
 	  public:
-		explicit MultiFuture(Future<void>, ...);
+		explicit MultiFuture(std::initializer_list<Future<void>>);
 		explicit MultiFuture(std::vector<Future<void>>&&);
 
 		std::size_t size() const noexcept;
@@ -1157,6 +1157,28 @@ namespace exathread {
 		}
 		if(allDone) s = (fail ? Status::Failed : Status::Complete);
 		return s;
+	}
+
+	inline MultiFuture<void>::MultiFuture(std::initializer_list<Future<void>> futs) : futures(futs) {
+		if(futures.size() <= 0) throw std::length_error("Cannot create a multi-future with an empty future list!");
+
+		std::shared_ptr<Pool> p;
+		for(const Future<void>& f : futures) {
+			std::shared_ptr<Pool> fp = f.task.promise().pool.lock();
+			if(p && fp != p) throw std::logic_error("Cannot create a multi-future with futures from different pools!");
+			p = fp;
+		}
+	}
+
+	inline MultiFuture<void>::MultiFuture(std::vector<Future<void>>&& futs) : futures(std::move(futs)) {
+		if(futures.size() <= 0) throw std::length_error("Cannot create a multi-future with an empty future list!");
+
+		std::shared_ptr<Pool> p;
+		for(const Future<void>& f : futures) {
+			std::shared_ptr<Pool> fp = f.task.promise().pool.lock();
+			if(p && fp != p) throw std::logic_error("Cannot create a multi-future with futures from different pools!");
+			p = fp;
+		}
 	}
 
 	inline void MultiFuture<void>::await() {
