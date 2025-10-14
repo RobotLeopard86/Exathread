@@ -1,14 +1,12 @@
 #include "../include/exathread.hpp"
 
 #include <cassert>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <chrono>
 
 using namespace std::chrono_literals;
 
@@ -55,6 +53,7 @@ int main() {
 		assert(v && "Test failed; not all strings found in result array!");
 	}
 	std::cout << "Yielding for 1 second... " << std::endl;
-	pool->submit(waito).await();
+	exathread::Future<void> wait = pool->submit(waito);
+	wait.await();
 	std::cout << "Done." << std::endl;
 }

@@ -79,6 +79,7 @@ namespace exathread {
 	};
 
 	///@cond
+	class Task;
 	namespace details {
 		struct Promise;
 		struct VoidPromise;
@@ -89,6 +90,18 @@ namespace exathread {
 		struct ThreadData;
 		template<typename... Args>
 		struct ArgsHolder;
+
+		template<typename T>
+		struct result {
+			using type = T;
+		};
+		template<typename T>
+			requires std::is_base_of_v<Task, T>
+		struct result<T> {
+			using type = T::value_type;
+		};
+		template<typename T>
+		using result_t = result<T>::type;
 	}
 	///@endcond
 
@@ -260,9 +273,10 @@ namespace exathread {
 		 * @throws std::logic_error If the task fails
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T, ExArgs&&...>>
+		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, T, ExArgs&&...>>>
 			requires std::invocable<F&&, T, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
+		[[nodiscard]] Future<R>
+		then(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after this future with no result
@@ -277,7 +291,7 @@ namespace exathread {
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T, ExArgs&&...>>
+			requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, T, ExArgs&&...>>>
 		void thenDetached(F&& func, ExArgs&&... exargs);
 
 		/**
@@ -296,9 +310,10 @@ namespace exathread {
 		 * @throws std::logic_error If the task fails
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, T, I, ExArgs&&...>>
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = details::result_t<std::invoke_result_t<F&&, T, I, ExArgs&&...>>>
 			requires std::invocable<F&&, T, I, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F&& func, ExArgs&&... exargs);
+		[[nodiscard]] MultiFuture<R>
+		thenBatch(Rn&& src, F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after this future with no result
@@ -316,7 +331,7 @@ namespace exathread {
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
-			requires std::invocable<F&&, T, I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T, I, ExArgs&&...>>
+			requires std::invocable<F&&, T, I&, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, T, I, ExArgs&&...>>>
 		void thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs);
 
 		/**
@@ -379,20 +394,22 @@ namespace exathread {
 		void await();
 		Status checkStatus() const noexcept;
 
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, ExArgs&&...>>
+		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
 			requires std::invocable<F&&, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
+		[[nodiscard]] Future<R>
+		then(F&& func, ExArgs&&... exargs);
 
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
+			requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
 		void thenDetached(F&& func, ExArgs&&... exargs);
 
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, I, ExArgs&&...>>
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I>
-		[[nodiscard]] MultiFuture<R> thenBatch(Rn&& src, F&& func, ExArgs&&... exargs);
+		[[nodiscard]] MultiFuture<R>
+		thenBatch(Rn&& src, F&& func, ExArgs&&... exargs);
 
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
-			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<std::invoke_result_t<F&&, I, ExArgs&&...>>
+			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 		void thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs);
 
 	  private:
@@ -464,9 +481,10 @@ namespace exathread {
 		 * @throws std::logic_error If any of the futures fail
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
+		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>>
 			requires std::invocable<F&&, std::vector<T>, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
+		[[nodiscard]] Future<R>
+		then(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a tracked task for execution after these futures with no result
@@ -481,7 +499,7 @@ namespace exathread {
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, std::vector<T>, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
+			requires std::invocable<F&&, std::vector<T>, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>>
 		void thenDetached(F&& func, ExArgs&&... exargs);
 
 		/**
@@ -501,9 +519,10 @@ namespace exathread {
 		 * @throws std::logic_error If any of the futures fail
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, T, ExArgs&&...>>
+		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, T, ExArgs&&...>>>
 			requires std::invocable<F&&, T, ExArgs&&...>
-		[[nodiscard]] MultiFuture<R> thenBatch(F&& func, ExArgs&&... exargs);
+		[[nodiscard]] MultiFuture<R>
+		thenBatch(F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Schedule a batch job based on a container for execution after these futures with no result
@@ -522,7 +541,7 @@ namespace exathread {
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T, ExArgs&&...>>
+			requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, T, ExArgs&&...>>>
 		void thenBatchDetached(F&& func, ExArgs&&... exargs);
 
 		/**
@@ -551,12 +570,13 @@ namespace exathread {
 		void await();
 		Status checkStatus() const noexcept;
 
-		template<typename F, typename... ExArgs, typename R = std::invoke_result_t<F&&, ExArgs&&...>>
+		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
 			requires std::invocable<F&&, ExArgs&&...>
-		[[nodiscard]] Future<R> then(F&& func, ExArgs&&... exargs);
+		[[nodiscard]] Future<R>
+		then(F&& func, ExArgs&&... exargs);
 
 		template<typename F, typename... ExArgs>
-			requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
+			requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
 		void thenDetached(F&& func, ExArgs&&... exargs);
 
 	  private:
@@ -595,7 +615,7 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param args Arguments to pass to the function
 		 */
-		template<typename F, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
+		template<typename F, typename... Args, typename R = details::result_t<std::invoke_result_t<F&&, Args&&...>>>
 			requires std::invocable<F&&, Args&&...>
 		[[nodiscard]] Future<R> submit(F&& func, Args&&... args);
 
@@ -609,7 +629,7 @@ namespace exathread {
 		 * @param args Arguments to pass to the function
 		 */
 		template<typename F, typename... Args>
-			requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
+			requires std::invocable<F&&, Args&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, Args&&...>>>
 		void submitDetached(F&& func, Args&&... args);
 
 		/**
@@ -625,9 +645,10 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 */
-		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = std::invoke_result_t<F&&, I, ExArgs&&...>>
+		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I>
-		[[nodiscard]] MultiFuture<R> batch(const Rn& src, F&& func, ExArgs&&... exargs);
+		[[nodiscard]] MultiFuture<R>
+		batch(const Rn& src, F&& func, ExArgs&&... exargs);
 
 		/**
 		 * @brief Submit a batch job based on a container into the pool with no result
@@ -642,7 +663,7 @@ namespace exathread {
 		 * @param exargs Extra arguments to pass to the function
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
-			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<std::invoke_result_t<F&&, I, ExArgs&&...>>
+			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 		void batchDetached(const Rn& src, F&& func, ExArgs&&... exargs);
 
 		/**
@@ -1531,7 +1552,7 @@ namespace exathread {
 	}
 
 	template<typename F, typename... Args>
-		requires std::invocable<F&&, Args&&...> && std::is_void_v<std::invoke_result_t<F&&, Args&&...>>
+		requires std::invocable<F&&, Args&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, Args&&...>>>
 	inline void Pool::submitDetached(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
 		auto [task, argset] = [this, func = std::move(func), args...]() mutable {
@@ -1545,8 +1566,7 @@ namespace exathread {
 					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
 				else
 					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args...>(args...));
-			}
-		}();
+			} }();
 
 		//Enqueue task
 		push(std::move(task));
@@ -1588,7 +1608,7 @@ namespace exathread {
 	}
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
-		requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<std::invoke_result_t<F&&, I, ExArgs&&...>>
+		requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 	inline void Pool::batchDetached(const Rn& src, F&& func, ExArgs&&... exargs) {
 		//Generate and enqueue tasks
 		for(I item : src) {
@@ -1604,8 +1624,7 @@ namespace exathread {
 						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {item}, std::forward<ExArgs...>(exargs...));
 					else
 						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
-				}
-			}();
+				} }();
 
 			//Enqueue task
 			push(std::move(task));
@@ -1658,7 +1677,7 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	template<typename F, typename... ExArgs>
-		requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T, ExArgs&&...>>
+		requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, T, ExArgs&&...>>>
 	// clang-format on
 	inline void Future<T>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
@@ -1743,7 +1762,7 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
-		requires std::invocable<F&&, T, I&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T, I, ExArgs&&...>>
+		requires std::invocable<F&&, T, I&, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, T, I, ExArgs&&...>>>
 	// clang-format on
 	inline void Future<T>::thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
@@ -1816,7 +1835,7 @@ namespace exathread {
 	}
 
 	template<typename F, typename... ExArgs>
-		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
+		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
 	inline void Future<void>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
@@ -1891,7 +1910,7 @@ namespace exathread {
 	}
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I>
-		requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<std::invoke_result_t<F&&, I, ExArgs&&...>>
+		requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 	inline void Future<void>::thenBatchDetached(Rn&& src, F&& func, ExArgs&&... exargs) {
 		if(this->task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
@@ -1979,7 +1998,7 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	template<typename F, typename... ExArgs>
-		requires std::invocable<F&&, std::vector<T>, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>
+		requires std::invocable<F&&, std::vector<T>, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, std::vector<T>, ExArgs&&...>>>
 	// clang-format on
 	inline void MultiFuture<T>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
@@ -2055,7 +2074,7 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	template<typename F, typename... ExArgs>
-		requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, T, ExArgs&&...>>
+		requires std::invocable<F&&, T, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, T, ExArgs&&...>>>
 	// clang-format on
 	inline void MultiFuture<T>::thenBatchDetached(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
@@ -2116,7 +2135,7 @@ namespace exathread {
 	}
 
 	template<typename F, typename... ExArgs>
-		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<std::invoke_result_t<F&&, ExArgs&&...>>
+		requires std::invocable<F&&, ExArgs&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
 	inline void MultiFuture<void>::thenDetached(F&& func, ExArgs&&... exargs) {
 		if(futures[0].task.promise().pool.expired()) throw std::bad_weak_ptr();
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
