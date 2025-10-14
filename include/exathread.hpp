@@ -179,6 +179,13 @@ namespace exathread {
 		std::coroutine_handle<details::Promise> handle() noexcept {
 			return h;
 		}
+
+		/**
+		 * @brief Allows for tasks to be awaited until completion from other tasks
+		 *
+		 * @return An awaitable that will resume when this task completes
+		 */
+		details::YieldOp operator co_await();
 	};
 
 	/**
@@ -188,6 +195,7 @@ namespace exathread {
 	 */
 	class VoidTask : public Task {
 	  public:
+		using value_type = void;
 		using promise_type = details::VoidPromise;
 
 		explicit VoidTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
@@ -205,6 +213,7 @@ namespace exathread {
 		requires(!std::is_void_v<T>)
 	class ValueTask : public Task {
 	  public:
+		using value_type = T;
 		using promise_type = details::ValuePromise<T>;
 
 		explicit ValueTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
@@ -905,6 +914,12 @@ namespace exathread {
 		}
 	};
 
+	inline details::YieldOp Task::operator co_await() {
+		details::YieldOp yld;
+		yld.predicate = [this]() { auto s = promise().status; return s == Status::Complete || s == Status::Failed; };
+		return yld;
+	}
+
 	inline details::YieldOp yieldUntilTrue(std::function<bool()> predicate) {
 		details::YieldOp yld;
 		yld.predicate = predicate;
@@ -1201,9 +1216,9 @@ namespace exathread {
 		//Actual function wrapping
 
 		//Is this a coroutine (of a recognized type) already?
-		if constexpr(std::is_base_of_v<R, Task>) {
+		if constexpr(std::is_base_of_v<Task, R>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(f) fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, Args... a) {
+			const auto wrap = [](decltype(f) fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, Args... a) -> R {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1277,9 +1292,9 @@ namespace exathread {
 		//Actual function wrapping
 
 		//Is this a coroutine (of a recognized type) already?
-		if constexpr(std::is_base_of_v<R, Task>) {
+		if constexpr(std::is_base_of_v<Task, R>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(f) fn, details::Promise** dp, Args... a) {
+			const auto wrap = [](decltype(f) fn, details::Promise** dp, Args... a) -> R {
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;

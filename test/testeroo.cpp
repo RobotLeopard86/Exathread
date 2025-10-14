@@ -8,6 +8,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 std::string reado(std::string fp) {
 	std::ifstream ifs(fp);
@@ -24,6 +27,10 @@ void printo(std::vector<std::string> results) {
 	for(const std::string& s : results) {
 		std::cout << "Got \"" << s << "\" in results list" << std::endl;
 	}
+}
+
+exathread::VoidTask waito() {
+	co_await exathread::yieldFor(1s);
 }
 
 int main() {
@@ -47,4 +54,7 @@ int main() {
 	for(const auto& [s, v] : check) {
 		assert(v && "Test failed; not all strings found in result array!");
 	}
+	std::cout << "Yielding for 1 second... " << std::endl;
+	pool->submit(waito).await();
+	std::cout << "Done." << std::endl;
 }
