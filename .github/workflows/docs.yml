@@ -4,55 +4,60 @@ permissions: write-all
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  release:
+        types: [published]
   workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-      - name: Install Doxygen
-        run: |
-          sudo rm /var/lib/man-db/auto-update
-          sudo apt-get update;
-          sudo apt-get install doxygen -y
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: |
+          sudo rm /var/lib/man-db/auto-update
+          sudo apt-get update;
+          sudo apt-get install doxygen -y
+          pip install -r docs/requirements.txt
       - name: Create temporary directory for build
         run: |
           git clone ${{ github.server_url }}/${{ github.repository }} /tmp/PAGESBUILD -b gh-pages
           git -C /tmp/PAGESBUILD pull
-      - name: Install Python dependencies
+      - name: Determine version to build
         run: |
-          pip install -r docs/requirements.txt
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "BUILDVER=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+          else
+            echo "BUILDVER=latest" >> $GITHUB_ENV
+          fi
       - name: Build documentation
         run: |
           cd docs
-          rm -rvf /tmp/PAGESBUILD/dev
-          sphinx-build -b html -j auto -a . /tmp/PAGESBUILD/latest
-      - name: Add changes
-        run: |
+          rm -rvf /tmp/PAGESBUILD/${BUILDVER}
+          sphinx-build -b html -j auto -a . /tmp/PAGESBUILD/${BUILDVER}
           cd /tmp/PAGESBUILD
           find . -path "*doctrees*" -exec rm -rvf "{}" +
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add .
-          git commit --allow-empty -m "Add changes for ${{ github.sha }}"
-          git pull
-      - name: Push changes
-        uses: ad-m/github-push-action@v0.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
-          directory: /tmp/PAGESBUILD
-      - name: Setup Pages
+      - name: Redirect stable link
+        if: github.event_name == "release"
+        run: |
+            cd /tmp/PAGESBUILD
+            echo "Redirecting stable link to newly released version " $RELEASE_VERSION
+            rm -rf stable
+            ln -s $RELEASE_VERSION stable
+      - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -61,6 +66,20 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - name: Cleanup temp directory
+      - name: Add docs changes to Git
+        run: |
+          cd /tmp/PAGESBUILD
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git pull
+          git add .
+          git commit --allow-empty -m "Add changes for ${{ github.sha }}"
+      - name: Push docs changes to GitHub
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          directory: /tmp/PAGESBUILD
+      - name: Cleanup build directory
         run: |
           rm -rvf /tmp/PAGESBUILD

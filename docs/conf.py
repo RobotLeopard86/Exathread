@@ -1,7 +1,7 @@
 import os
 from textwrap import dedent
 
-version = os.environ.get("GITHUB_RELEASE", default="latest")
+version = os.environ.get("BUILDVER", default="latest")
 project = 'Exathread'
 copyright = '2025 RobotLeopard86'
 author = 'RobotLeopard86'
