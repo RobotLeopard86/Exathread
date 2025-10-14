@@ -46,7 +46,7 @@ jobs:
           cd /tmp/PAGESBUILD
           find . -path "*doctrees*" -exec rm -rvf "{}" +
       - name: Redirect stable link
-        if: github.event_name == "release"
+        if: ${{ github.event_name == 'release' }}
         run: |
             cd /tmp/PAGESBUILD
             echo "Redirecting stable link to newly released version " $RELEASE_VERSION
