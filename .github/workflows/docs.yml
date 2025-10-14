@@ -49,9 +49,9 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
             cd /tmp/PAGESBUILD
-            echo "Redirecting stable link to newly released version " $RELEASE_VERSION
+            echo "Redirecting stable link to newly released version " $BUILDVER
             rm -rf stable
-            ln -s $RELEASE_VERSION stable
+            ln -s $BUILDVER stable
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
