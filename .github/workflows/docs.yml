@@ -23,10 +23,11 @@ jobs:
           python-version: "3.14"
       - name: Install dependencies
         run: |
-          sudo rm /var/lib/man-db/auto-update
           sudo apt-get update;
+          sudo rm -f /var/lib/man-db/auto-update
           sudo apt-get install doxygen -y
-          pip install -r docs/requirements.txt
+          cd docs
+          pip install -r requirements.txt
       - name: Create temporary directory for build
         run: |
           git clone ${{ github.server_url }}/${{ github.repository }} /tmp/PAGESBUILD -b gh-pages
@@ -40,8 +41,8 @@ jobs:
           fi
       - name: Build documentation
         run: |
-          cd docs
           rm -rvf /tmp/PAGESBUILD/${BUILDVER}
+          cd docs
           sphinx-build -b html -j auto -a . /tmp/PAGESBUILD/${BUILDVER}
           cd /tmp/PAGESBUILD
           find . -path "*doctrees*" -exec rm -rvf "{}" +
