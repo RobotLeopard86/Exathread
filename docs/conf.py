@@ -3,8 +3,8 @@ from textwrap import dedent
 
 version = os.environ.get("BUILDVER", default="latest")
 project = 'Exathread'
-copyright = '2025 RobotLeopard86'
-author = 'RobotLeopard86'
+copyright = '2025 Owen Z. Siebers'
+author = 'Owen Z. Siebers (RobotLeopard86)'
 release = version
 
 extensions = [

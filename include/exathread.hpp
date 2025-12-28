@@ -1,12 +1,12 @@
 /**
  * @file exathread.hpp
- * @author Created by RobotLeopard86
+ * @author Created by Owen Z. Siebers (RobotLeopard86)
  * @version Version 1.0.0
- * @copyright Copyright (c) 2025 RobotLeopard86, licensed under the Apache License 2.0
+ * @copyright Copyright (c) 2025 Owen Z. Siebers, licensed under the Apache License 2.0
  */
 
 /*
-Copyright (c) 2025 RobotLeopard86
+Copyright (c) 2025 Owen Z. Siebers
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ limitations under the License.
 ----------------------------------------------------------------------------------
 
 "But I'm not a lawyer? What does this mean?"
-Good question. Well hello there, it's me, RobotLeopard86.
+Good question. Well hello there, it's me, Owen.
 Just as a note, I've found the Apache License 2.0 to be fairly readable for regular humans,
 but basically it breaks down to this:
 (please note, I am not a lawyer, and while I have tried to be as accurate as possible here,
@@ -270,6 +270,8 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
+		 *
 		 * @throws std::logic_error If the task fails
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
@@ -286,6 +288,8 @@ namespace exathread {
 		 *
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 *
 		 * @throws std::logic_error If the task fails
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
@@ -307,6 +311,8 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
+		 *
 		 * @throws std::logic_error If the task fails
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
 		 */
@@ -326,6 +332,8 @@ namespace exathread {
 		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 *
 		 * @throws std::logic_error If the task fails
 		 * @throws std::bad_weak_ptr If the pool to which this future belongs no longer exists
@@ -478,6 +486,8 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
+		 *
 		 * @throws std::logic_error If any of the futures fail
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
@@ -494,6 +504,8 @@ namespace exathread {
 		 *
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 *
 		 * @throws std::logic_error If any of the futures fail
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
@@ -516,6 +528,8 @@ namespace exathread {
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
 		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
+		 *
 		 * @throws std::logic_error If any of the futures fail
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
 		 */
@@ -536,6 +550,8 @@ namespace exathread {
 		 *
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 *
 		 * @throws std::logic_error If any of the futures fail
 		 * @throws std::bad_weak_ptr If the pool to which the futures belong no longer exists
@@ -627,6 +643,8 @@ namespace exathread {
 		 *
 		 * @param func The function to invoke
 		 * @param args Arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 */
 		template<typename F, typename... Args>
 			requires std::invocable<F&&, Args&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, Args&&...>>>
@@ -644,6 +662,8 @@ namespace exathread {
 		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>, typename R = details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
 			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I>
@@ -661,6 +681,8 @@ namespace exathread {
 		 * @param src The source range to iterate over
 		 * @param func The function to invoke
 		 * @param exargs Extra arguments to pass to the function
+		 *
+		 * @warning If submitting a lambda, <b>do not</b> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.
 		 */
 		template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I = std::ranges::range_value_t<Rn>>
 			requires std::invocable<F&&, I, ExArgs&&...> && std::is_copy_constructible_v<I> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, I, ExArgs&&...>>>
