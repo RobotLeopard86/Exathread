@@ -477,6 +477,10 @@
 <dt class="sig sig-object cpp" id="_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs">
 <span id="_CPPv3I0Dp0EN9exathread11MultiFuture4thenERR1FDpRR6ExArgs"></span><span id="_CPPv2I0Dp0EN9exathread11MultiFuture4thenERR1FDpRR6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">R</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">result_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">invoke_result_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs" title="exathread::MultiFuture::then::F"><span class="n"><span class="pre">F</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN9exathread11MultiFutureE" title="exathread::MultiFuture::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs" title="exathread::MultiFuture::then::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1MultiFuture_1ae7543864e5e3d843e1e4b77347b4c0a5"></span><a class="reference internal" href="classexathread_1_1Future.html#_CPPv4I0EN9exathread6FutureE" title="exathread::Future"><span class="n"><span class="pre">Future</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs" title="exathread::MultiFuture::then::R"><span class="n"><span class="pre">R</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">then</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs" title="exathread::MultiFuture::then::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs" title="exathread::MultiFuture::then::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0Dp0EN9exathread11MultiFuture4thenE6FutureI1RERR1FDpRR6ExArgs" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Schedule a tracked task for execution after these futures. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If submitting a lambda, <strong>do not</strong> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -504,6 +508,10 @@
 <dt class="sig sig-object cpp" id="_CPPv4I0DpEN9exathread11MultiFuture12thenDetachedEvRR1FDpRR6ExArgs">
 <span id="_CPPv3I0DpEN9exathread11MultiFuture12thenDetachedERR1FDpRR6ExArgs"></span><span id="_CPPv2I0DpEN9exathread11MultiFuture12thenDetachedERR1FDpRR6ExArgs"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">F</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">ExArgs</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classexathread_1_1MultiFuture_1abc2f61e60520c2b0aa5f6b7f2520fdd5"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">thenDetached</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0DpEN9exathread11MultiFuture12thenDetachedEvRR1FDpRR6ExArgs" title="exathread::MultiFuture::thenDetached::F"><span class="n"><span class="pre">F</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">func</span></span>, <a class="reference internal" href="#_CPPv4I0DpEN9exathread11MultiFuture12thenDetachedEvRR1FDpRR6ExArgs" title="exathread::MultiFuture::thenDetached::ExArgs"><span class="n"><span class="pre">ExArgs</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">exargs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0DpEN9exathread11MultiFuture12thenDetachedEvRR1FDpRR6ExArgs" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Schedule a tracked task for execution after these futures with no result. </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If submitting a lambda, <strong>do not</strong> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -536,6 +544,10 @@
 </dd>
 </dl>
 </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If submitting a lambda, <strong>do not</strong> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -569,6 +581,10 @@
 </dd>
 </dl>
 </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If submitting a lambda, <strong>do not</strong> make use of capturing, as this creates issues with object lifetimes and can cause segfaults that are very difficult to track down. Prefer passing the values as arguments instead.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -703,7 +719,7 @@
 
   <p class="copyright">
     
-      © Copyright 2025 RobotLeopard86.
+      © Copyright 2025 Owen Z. Siebers.
       <br/>
     
   </p>
