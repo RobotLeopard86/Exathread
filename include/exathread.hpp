@@ -1556,9 +1556,9 @@ namespace exathread {
 					return corowrap<std::remove_cvref_t<F>, void>(weak_from_this(), std::move(func));
 			} else {
 				if constexpr(is_function_like_v<F>)
-					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
+					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args>(args)...);
 				else
-					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args...>(args...));
+					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args>(args)...);
 			}
 		}();
 
@@ -1585,9 +1585,9 @@ namespace exathread {
 					return corowrap<std::remove_cvref_t<F>, void>(weak_from_this(), std::move(func));
 			} else {
 				if constexpr(is_function_like_v<F>)
-					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args...>(args...));
+					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args>(args)...);
 				else
-					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args...>(args...));
+					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args>(args)...);
 			} }();
 
 		//Enqueue task

@@ -1,4 +1,4 @@
-project('exathread', 'cpp', version: '2.0.0', license: 'Apache-2.0', default_options: [ 'cpp_std=c++20'])
+project('exathread', 'cpp', version: '2.0.1', license: 'Apache-2.0', default_options: [ 'cpp_std=c++20'])
 
 exathread_dep = declare_dependency(include_directories: include_directories('include'))
 
