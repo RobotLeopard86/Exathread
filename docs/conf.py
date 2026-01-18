@@ -14,7 +14,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md', '.venv']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md', 'LICENSE.md', '.venv']
 
 html_theme = 'pydata_sphinx_theme'
 html_title = "Exathread Documentation"
