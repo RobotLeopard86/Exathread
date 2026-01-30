@@ -2,26 +2,26 @@
     {
         "name": "Latest development commit",
         "version": "latest",
-        "url": "https://robotleopard86.github.io/Exathread/latest"
+        "url": "https://robotleopard86.github.io/Exathread/latest/"
     },
 	{
         "name": "Latest stable release (2.0.1)",
         "version": "2.0.1",
-        "url": "https://robotleopard86.github.io/Exathread/stable"
+        "url": "https://robotleopard86.github.io/Exathread/stable/"
     },
     {
         "name": "2.0.0",
         "version": "2.0.0",
-        "url": "https://robotleopard86.github.io/Exathread/2.0.0"
+        "url": "https://robotleopard86.github.io/Exathread/2.0.0/"
     },
 	{
         "name": "1.1.1",
         "version": "1.1.1",
-        "url": "https://robotleopard86.github.io/Exathread/1.1.1"
+        "url": "https://robotleopard86.github.io/Exathread/1.1.1/"
     },
     {
         "name": "1.1.0",
         "version": "1.1.0",
-        "url": "https://robotleopard86.github.io/Exathread/1.1.0"
+        "url": "https://robotleopard86.github.io/Exathread/1.1.0/"
     }
 ]
