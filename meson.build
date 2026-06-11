@@ -1,4 +1,4 @@
-project('exathread', 'cpp', version: '2.0.1', license: 'Apache-2.0', default_options: [ 'cpp_std=c++20'])
+project('exathread', 'cpp', version: '2.0.2', license: 'Apache-2.0', default_options: [ 'cpp_std=c++20'])
 
 exathread_dep = declare_dependency(include_directories: include_directories('include'))
 
@@ -16,3 +16,5 @@ if host_machine.system() == 'windows'
 endif
 
 test('testeroo', executable('testeroo', 'test' / 'testeroo.cpp', cpp_args: args), workdir: meson.project_source_root() / 'test')
+
+install_headers('include' / 'exathread.hpp')
