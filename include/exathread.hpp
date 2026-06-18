@@ -1295,7 +1295,7 @@ namespace exathread {
 			details::Promise* dp = nullptr;
 			const auto wrap = [](std::decay_t<decltype(f)> fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, std::remove_reference_t<Args>&&... a) -> R {
 				//Store args
-				std::tuple<Arg1, std::remove_reference_t<Args>...> args = std::make_tuple<Arg1, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(a)...);
+				std::tuple<std::remove_reference_t<Args>...> args = std::make_tuple<std::remove_reference_t<Args>...>(std::move(a)...);
 
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
@@ -1304,7 +1304,9 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = std::apply(fn, std::move(args));
+				std::tuple<std::remove_reference_t<Arg1>, std::remove_reference_t<Args>...> finalArgs =
+					std::make_tuple<std::remove_reference_t<Arg1>, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(std::get<Args>(args))...);
+				R inner = std::apply(fn, std::move(finalArgs));
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
@@ -1340,11 +1342,13 @@ namespace exathread {
 			if constexpr(std::is_void_v<R>) {
 				const auto wrap = [](std::decay_t<decltype(f)> fn, std::shared_ptr<std::optional<Arg1>> a1, std::remove_reference_t<Args>&&... a) -> VoidTask {
 					//Store args
-					std::tuple<Arg1, std::remove_reference_t<Args>...> args = std::make_tuple<Arg1, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(a)...);
+					std::tuple<std::remove_reference_t<Args>...> args = std::make_tuple<std::remove_reference_t<Args>...>(std::move(a)...);
 					co_await std::suspend_always {};
 
 					//Run the function
-					std::apply(fn, std::move(args));
+					std::tuple<std::remove_reference_t<Arg1>, std::remove_reference_t<Args>...> finalArgs =
+						std::make_tuple<std::remove_reference_t<Arg1>, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(std::get<Args>(args))...);
+					std::apply(fn, std::move(finalArgs));
 					co_return;
 				};
 
@@ -1358,11 +1362,13 @@ namespace exathread {
 			} else {
 				const auto wrap = [](std::decay_t<decltype(f)> fn, std::shared_ptr<std::optional<Arg1>> a1, std::remove_reference_t<Args>&&... a) -> ValueTask<R> {
 					//Store args and immediately suspend
-					std::tuple<Arg1, std::remove_reference_t<Args>...> args = std::make_tuple<Arg1, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(a)...);
+					std::tuple<std::remove_reference_t<Args>...> args = std::make_tuple<std::remove_reference_t<Args>...>(std::move(a)...);
 					co_await std::suspend_always {};
 
 					//Run the function
-					co_return std::apply(fn, std::move(args));
+					std::tuple<std::remove_reference_t<Arg1>, std::remove_reference_t<Args>...> finalArgs =
+						std::make_tuple<std::remove_reference_t<Arg1>, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(std::get<Args>(args))...);
+					co_return std::apply(fn, std::move(finalArgs));
 				};
 
 				//Set promise data
