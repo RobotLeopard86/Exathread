@@ -1,12 +1,12 @@
 /**
  * @file exathread.hpp
  * @author Created by Owen Z. Siebers (RobotLeopard86)
- * @version Version 1.0.0
- * @copyright Copyright (c) 2025 Owen Z. Siebers, licensed under the Apache License 2.0
+ * @version Version 3.0.0
+ * @copyright Copyright (c) 2026 Owen Z. Siebers, licensed under the Apache License 2.0
  */
 
 /*
-Copyright (c) 2025 Owen Z. Siebers
+Copyright (c) 2026 Owen Z. Siebers
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ limitations under the License.
 ----------------------------------------------------------------------------------
 
 "But I'm not a lawyer? What does this mean?"
-Good question. Well hello there, it's me, Owen.
+Good question. Well hello there, it's me, the person who made this.
 Just as a note, I've found the Apache License 2.0 to be fairly readable for regular humans,
 but basically it breaks down to this:
 (please note, I am not a lawyer, and while I have tried to be as accurate as possible here,
@@ -58,6 +58,7 @@ this is not a substitute for the License itself nor is this legal advice, so ple
 #include <stdexcept>
 #include <stop_token>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -88,8 +89,6 @@ namespace exathread {
 		struct ValuePromise;
 		struct YieldOp;
 		struct ThreadData;
-		template<typename... Args>
-		struct ArgsHolder;
 
 		template<typename T>
 		struct result {
@@ -138,7 +137,7 @@ namespace exathread {
 		/**
 		 * @brief Move construction
 		 */
-		Task(Task&& other) noexcept : h(std::exchange(other.h, {})) {}
+		Task(Task&& other) noexcept;
 
 		/**
 		 * @brief Move assignment
@@ -213,6 +212,7 @@ namespace exathread {
 
 		explicit VoidTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
 		VoidTask(Task&& t) : Task(std::move(t)) {}
+		VoidTask(VoidTask&& t) : Task(std::move(t)) {}
 	};
 
 	/**
@@ -231,6 +231,7 @@ namespace exathread {
 
 		explicit ValueTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
 		ValueTask(Task&& t) : Task(std::move(t)) {}
+		ValueTask(ValueTask&& t) : Task(std::move(t)) {}
 	};
 
 	template<typename T = void>
@@ -393,6 +394,9 @@ namespace exathread {
 		friend class Pool;
 		friend class MultiFuture<T>;
 		friend class MultiFuture<void>;
+		template<typename U>
+			requires std::is_copy_constructible_v<U> || std::is_void_v<U>
+		friend class Future;
 	};
 
 	///@cond
@@ -429,6 +433,9 @@ namespace exathread {
 		template<typename T>
 			requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 		friend class MultiFuture;
+		template<typename T>
+			requires std::is_copy_constructible_v<T> || std::is_void_v<T>
+		friend class Future;
 	};
 	///@endcond
 
@@ -445,7 +452,7 @@ namespace exathread {
 		 * @throws std::logic_error If any of the futures belongs to a different pool from the others
 		 * @throws std::length_error If the list of futures is empty
 		 */
-		MultiFuture(std::initializer_list<Future<T>>);
+		explicit MultiFuture(std::initializer_list<Future<T>>);
 
 		/**
 		 * @brief Create a MultiFuture with a collection of futures
@@ -460,7 +467,9 @@ namespace exathread {
 		 *
 		 * @returns Future count
 		 */
-		std::size_t size() const noexcept;
+		std::size_t size() const noexcept {
+			return futures.size();
+		}
 
 		/**
 		 * @brief Block until all futures have completed execution
@@ -582,7 +591,9 @@ namespace exathread {
 		explicit MultiFuture(std::initializer_list<Future<void>>);
 		explicit MultiFuture(std::vector<Future<void>>&&);
 
-		std::size_t size() const noexcept;
+		std::size_t size() const noexcept {
+			return futures.size();
+		}
 		void await();
 		Status checkStatus() const noexcept;
 
@@ -705,7 +716,7 @@ namespace exathread {
 	  private:
 		Pool(std::size_t threadCount);
 
-		static std::size_t totalThreads;
+		static std::atomic<std::size_t> totalThreads;
 		std::vector<details::ThreadData> threads;
 
 		friend void worker(std::stop_token, std::shared_ptr<Pool>, std::size_t);
@@ -808,7 +819,6 @@ namespace exathread {
 		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
 		std::vector<std::vector<Task>> next;  //The next task(s) to schedule after the completion of this one
 		std::function<void(std::any)> arg1Set;//The setter for the first argument (used for late-binding for continuations)
-		std::any lambdaSrc;					  //The source lambda object that generated the coroutine, if needed
 
 		void unhandled_exception() noexcept {
 			exception = std::current_exception();
@@ -834,6 +844,8 @@ namespace exathread {
 		virtual Task get_return_object() noexcept {
 			return {};
 		}
+
+		Promise() : handleRefCount(0) {}
 
 	  private:
 		virtual void continuation() {}
@@ -878,6 +890,11 @@ namespace exathread {
 				}
 			}
 		}
+
+		void* operator new(std::size_t size) {
+			auto ptr = ::operator new(size);
+			return ptr;
+		}
 	};
 
 	inline Task::Task(std::coroutine_handle<details::Promise> h) : h(h) {
@@ -885,26 +902,35 @@ namespace exathread {
 	}
 
 	inline Task::Task(const Task& other) noexcept : h(other.h) {
-		++(h.promise().handleRefCount);
+		if(h) ++(h.promise().handleRefCount);
 	}
 
 	inline Task& Task::operator=(const Task& other) noexcept {
 		if(this != &other) {
+			if(h && --(h.promise().handleRefCount) == 0) {
+				h.destroy();
+			}
 			h = other.h;
-			++(h.promise().handleRefCount);
+			if(h) ++(h.promise().handleRefCount);
 		}
 		return *this;
 	}
 
+	inline Task::Task(Task&& other) noexcept : h(std::exchange(other.h, {})) {}
+
 	inline Task& Task::operator=(Task&& other) noexcept {
 		if(this != &other) {
+			if(h && --(h.promise().handleRefCount) == 0) {
+				h.destroy();
+			}
 			h = std::exchange(other.h, {});
 		}
 		return *this;
 	}
 
 	inline Task::~Task() noexcept {
-		if(h && promise().handleRefCount-- <= 0) {
+		if(!h) return;
+		if(--(promise().handleRefCount) <= 0) {
 			h.destroy();
 		}
 	}
@@ -1046,13 +1072,9 @@ namespace exathread {
 	inline T& Future<T>::operator*() {
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
+		s = checkStatus();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
 		if(s == Status::Failed) {
-			try {
-				std::rethrow_exception(vp.exception);
-			} catch(const std::exception& e) {
-				printf("%s\n", e.what());
-			}
 			std::rethrow_exception(vp.exception);
 		}
 		return vp.val.value();
@@ -1063,13 +1085,9 @@ namespace exathread {
 	inline T Future<T>::operator*() const {
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
+		s = checkStatus();
 		const details::ValuePromise<T>& vp = static_cast<const details::ValuePromise<T>&>(task.promise());
 		if(s == Status::Failed) {
-			try {
-				std::rethrow_exception(vp.exception);
-			} catch(const std::exception& e) {
-				printf("%s\n", e.what());
-			}
 			std::rethrow_exception(vp.exception);
 		}
 		return vp.val.value();
@@ -1080,13 +1098,9 @@ namespace exathread {
 												inline T* Future<T>::operator->() {
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
+		s = checkStatus();
 		details::ValuePromise<T>& vp = static_cast<details::ValuePromise<T>&>(task.promise());
 		if(s == Status::Failed) {
-			try {
-				std::rethrow_exception(vp.exception);
-			} catch(const std::exception& e) {
-				printf("%s\n", e.what());
-			}
 			std::rethrow_exception(vp.exception);
 		}
 		return &(vp.val.value());
@@ -1097,13 +1111,9 @@ namespace exathread {
 												inline const T* Future<T>::operator->() const {
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
+		s = checkStatus();
 		const details::ValuePromise<T>& vp = static_cast<const details::ValuePromise<T>&>(task.promise());
 		if(s == Status::Failed) {
-			try {
-				std::rethrow_exception(vp.exception);
-			} catch(const std::exception& e) {
-				printf("%s\n", e.what());
-			}
 			std::rethrow_exception(vp.exception);
 		}
 		return &(vp.val.value());
@@ -1174,7 +1184,7 @@ namespace exathread {
 				s = Status::Executing;
 			}
 			if(f.checkStatus() == Status::Failed) {
-				fail = false;
+				fail = true;
 			}
 		}
 		if(allDone) s = (fail ? Status::Failed : Status::Complete);
@@ -1226,7 +1236,7 @@ namespace exathread {
 				s = Status::Executing;
 			}
 			if(f.checkStatus() == Status::Failed) {
-				fail = false;
+				fail = true;
 			}
 		}
 		if(allDone) s = (fail ? Status::Failed : Status::Complete);
@@ -1268,9 +1278,9 @@ namespace exathread {
 		}
 	}
 
-	template<typename F, typename Arg1, typename... Args, typename R = std::invoke_result_t<F&&, Arg1, Args&&...>>
+	template<typename F, typename Arg1, typename... Args, typename R = std::invoke_result_t<F&&, Arg1, std::remove_reference_t<Args>&&...>>
 		requires(!std::is_void_v<Arg1>)
-	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
+	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, std::remove_reference_t<Args>&&... baseArgs) {
 		std::shared_ptr<std::optional<Arg1>> a1 = std::shared_ptr<std::optional<Arg1>>(new std::optional<Arg1>(std::nullopt));
 		const auto setArg1 = [a1](std::any val) {
 			std::decay_t<Arg1> a1v = std::any_cast<std::decay_t<Arg1>>(std::move(val));
@@ -1283,7 +1293,10 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<Task, R>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(f) fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, Args... a) -> R {
+			const auto wrap = [](std::decay_t<decltype(f)> fn, details::Promise** dp, std::shared_ptr<std::optional<Arg1>> a1, std::remove_reference_t<Args>&&... a) -> R {
+				//Store args
+				std::tuple<Arg1, std::remove_reference_t<Args>...> args = std::make_tuple<Arg1, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(a)...);
+
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1291,67 +1304,81 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = fn(a1->value(), a...);
+				R inner = std::apply(fn, std::move(args));
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
-				inner.promise().lambdaSrc = std::move(fn);
 				inner.resume();
 
 				//Await and return logic
+				co_await inner;
 				if constexpr(std::is_same_v<R, VoidTask>) {
-					co_await inner;
+					details::VoidPromise& vp = static_cast<details::VoidPromise&>(inner.promise());
+					if(vp.status == Status::Failed) {
+						std::rethrow_exception(vp.exception);
+					}
 					co_return;
 				} else {
-					co_return co_await inner;
+					details::ValuePromise<details::result_t<R>>& vp = static_cast<details::ValuePromise<details::result_t<R>>&>(inner.promise());
+					if(vp.status == Status::Failed) {
+						std::rethrow_exception(vp.exception);
+					}
+					co_return vp.val.value();
 				}
 			};
 
 			//Start task and update promise data
-			Task wrapped = wrap(std::forward<F>(f), &dp, a1, baseArgs...);
+			Task wrapped = wrap(std::forward<F>(f), &dp, a1, std::move(baseArgs)...);
 			dp = &wrapped.promise();
 			wrapped.resume();
 			wrapped.promise().arg1Set = setArg1;
 			wrapped.promise().pool = p;
 			wrapped.promise().status = Status::Pending;
-			wrapped.promise().lambdaSrc = std::move(wrap);
 			return std::make_pair<R, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args... a) -> VoidTask {
+				const auto wrap = [](std::decay_t<decltype(f)> fn, std::shared_ptr<std::optional<Arg1>> a1, std::remove_reference_t<Args>&&... a) -> VoidTask {
+					//Store args
+					std::tuple<Arg1, std::remove_reference_t<Args>...> args = std::make_tuple<Arg1, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(a)...);
+					co_await std::suspend_always {};
+
 					//Run the function
-					fn(a1->value(), a...);
+					std::apply(fn, std::move(args));
 					co_return;
 				};
 
 				//Set promise data
-				VoidTask wrapped = wrap(std::forward<F>(f), a1, baseArgs...);
+				VoidTask wrapped = wrap(std::forward<F>(f), a1, std::move(baseArgs)...);
 				wrapped.promise().arg1Set = setArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
-				wrapped.promise().lambdaSrc = std::move(wrap);
+				wrapped.resume();
 				return std::make_pair<VoidTask, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			} else {
-				const auto wrap = [](decltype(f) fn, std::shared_ptr<std::optional<Arg1>> a1, Args... a) -> ValueTask<R> {
+				const auto wrap = [](std::decay_t<decltype(f)> fn, std::shared_ptr<std::optional<Arg1>> a1, std::remove_reference_t<Args>&&... a) -> ValueTask<R> {
+					//Store args and immediately suspend
+					std::tuple<Arg1, std::remove_reference_t<Args>...> args = std::make_tuple<Arg1, std::remove_reference_t<Args>...>(std::move(a1->value()), std::move(a)...);
+					co_await std::suspend_always {};
+
 					//Run the function
-					co_return fn(a1->value(), a...);
+					co_return std::apply(fn, std::move(args));
 				};
 
 				//Set promise data
-				ValueTask<R> wrapped = wrap(std::forward<F>(f), a1, baseArgs...);
+				ValueTask<R> wrapped = wrap(std::forward<F>(f), a1, std::move(baseArgs)...);
 				wrapped.promise().arg1Set = setArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
-				wrapped.promise().lambdaSrc = std::move(wrap);
+				wrapped.resume();
 				return std::make_pair<ValueTask<R>, decltype(setArg1)>(std::move(wrapped), std::move(setArg1));
 			}
 		}
 	}
 
-	template<typename F, typename Arg1 = void, typename... Args, typename R = std::invoke_result_t<F&&, Args&&...>>
+	template<typename F, typename Arg1 = void, typename... Args, typename R = std::invoke_result_t<F&&, std::remove_reference_t<Args>&&...>>
 		requires std::is_void_v<Arg1>
-	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, Args&&... baseArgs) {
+	inline auto corowrap(std::weak_ptr<Pool> p, F&& f, std::remove_reference_t<Args>&&... baseArgs) {
 		const auto fakeSetArg1 = [](std::any) {};
 
 		//Actual function wrapping
@@ -1359,7 +1386,10 @@ namespace exathread {
 		//Is this a coroutine (of a recognized type) already?
 		if constexpr(std::is_base_of_v<Task, R>) {
 			details::Promise* dp = nullptr;
-			const auto wrap = [](decltype(f) fn, details::Promise** dp, Args... a) -> R {
+			const auto wrap = [](std::decay_t<decltype(f)> fn, details::Promise** dp, std::remove_reference_t<Args>&&... a) -> R {
+				//Store args
+				std::tuple<std::remove_reference_t<Args>...> args = std::make_tuple<std::remove_reference_t<Args>...>(std::move(a)...);
+
 				//Store promise data pointer and immediately suspend
 				//This is so we can safely use the pointer above
 				details::Promise* promise = *dp;
@@ -1367,59 +1397,73 @@ namespace exathread {
 
 				//Create and start the real task function
 				//Since Task::Promise has suspend_always for initial_suspend this won't run until an explicit resume() call is made and thus the args should be bound
-				R inner = fn(a...);
+				R inner = std::apply(fn, std::move(args));
 				inner.promise().pool = promise->pool;
 				inner.promise().status = Status::Executing;
 				inner.promise().threadIdx = promise->threadIdx;
-				inner.promise().lambdaSrc = std::move(fn);
 				inner.resume();
 
 				//Await and return logic
+				co_await inner;
 				if constexpr(std::is_same_v<R, VoidTask>) {
-					co_await inner;
+					details::VoidPromise& vp = static_cast<details::VoidPromise&>(inner.promise());
+					if(vp.status == Status::Failed) {
+						std::rethrow_exception(vp.exception);
+					}
 					co_return;
 				} else {
-					co_return co_await inner;
+					details::ValuePromise<details::result_t<R>>& vp = static_cast<details::ValuePromise<details::result_t<R>>&>(inner.promise());
+					if(vp.status == Status::Failed) {
+						std::rethrow_exception(vp.exception);
+					}
+					co_return vp.val.value();
 				}
 			};
 
 			//Start task and update promise data
-			Task wrapped = wrap(std::forward<F>(f), &dp, baseArgs...);
+			Task wrapped = wrap(std::forward<F>(f), &dp, std::move(baseArgs)...);
 			dp = &wrapped.promise();
 			wrapped.resume();
 			wrapped.promise().arg1Set = fakeSetArg1;
 			wrapped.promise().pool = p;
 			wrapped.promise().status = Status::Pending;
-			wrapped.promise().lambdaSrc = std::move(wrap);
 			return std::make_pair<R, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 		} else {
 			//Void or not?
 			if constexpr(std::is_void_v<R>) {
-				const auto wrap = [](decltype(f) fn, Args... a) -> VoidTask {
+				const auto wrap = [](std::decay_t<decltype(f)> fn, std::remove_reference_t<Args>&&... a) -> VoidTask {
+					//Store args and immediately suspend
+					std::tuple<std::remove_reference_t<Args>...> args = std::make_tuple<std::remove_reference_t<Args>...>(std::move(a)...);
+					co_await std::suspend_always {};
+
 					//Run the function
-					fn(a...);
+					std::apply(fn, std::move(args));
 					co_return;
 				};
 
 				//Set promise data
-				VoidTask wrapped = wrap(std::forward<F>(f), baseArgs...);
+				VoidTask wrapped = wrap(std::forward<F>(f), std::move(baseArgs)...);
 				wrapped.promise().arg1Set = fakeSetArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
-				wrapped.promise().lambdaSrc = std::move(wrap);
+				wrapped.resume();
 				return std::make_pair<VoidTask, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			} else {
-				const auto wrap = [](decltype(f) fn, Args... a) -> ValueTask<R> {
+				const auto wrap = [](std::decay_t<decltype(f)> fn, std::remove_reference_t<Args>&&... a) -> ValueTask<R> {
+					//Store args and immediately suspend
+					std::tuple<std::remove_reference_t<Args>...> args = std::make_tuple<std::remove_reference_t<Args>...>(std::move(a)...);
+					co_await std::suspend_always {};
+
 					//Run the function
-					co_return fn(a...);
+					co_return std::apply(fn, std::move(args));
 				};
 
 				//Set promise data
-				ValueTask<R> wrapped = wrap(std::forward<F>(f), baseArgs...);
+				ValueTask<R> wrapped = wrap(std::forward<F>(f), std::move(baseArgs)...);
 				wrapped.promise().arg1Set = fakeSetArg1;
 				wrapped.promise().pool = p;
 				wrapped.promise().status = Status::Pending;
-				wrapped.promise().lambdaSrc = std::move(wrap);
+				wrapped.resume();
 				return std::make_pair<ValueTask<R>, decltype(fakeSetArg1)>(std::move(wrapped), std::move(fakeSetArg1));
 			}
 		}
@@ -1518,6 +1562,8 @@ namespace exathread {
 		while(queueSize() > 0) std::this_thread::yield();
 	}
 
+	inline std::atomic<std::size_t> Pool::totalThreads = 0;
+
 	inline Pool::Pool(std::size_t threadCount) {
 		//Safety check
 		if(totalThreads + threadCount > std::thread::hardware_concurrency()) throw std::out_of_range("Total number of threads used by pools would exceed hardware concurrency limit!");
@@ -1528,7 +1574,6 @@ namespace exathread {
 		for(std::size_t i = 0; i < threadCount; ++i) {
 			//Setup data
 			details::ThreadData& td = threads.emplace_back();
-			td.pool = weak_from_this();
 			td.myIndex = i;
 		}
 	}
@@ -1540,6 +1585,7 @@ namespace exathread {
 		//Spawn threads
 		for(std::size_t i = 0; i < threadCount; ++i) {
 			details::ThreadData& td = p->threads[i];
+			td.pool = p;
 			td.thread = std::jthread(worker, p, i);
 		}
 
@@ -1578,9 +1624,9 @@ namespace exathread {
 					return corowrap<std::remove_cvref_t<F>, void>(weak_from_this(), std::move(func));
 			} else {
 				if constexpr(is_function_like_v<F>)
-					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::forward<Args>(args)...);
+					return corowrap<F&&, void, Args...>(weak_from_this(), *func, std::move(args)...);
 				else
-					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::forward<Args>(args)...);
+					return corowrap<std::remove_cvref_t<F>, void, Args...>(weak_from_this(), std::move(func), std::move(args)...);
 			}
 		}();
 
@@ -1626,14 +1672,14 @@ namespace exathread {
 			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I>(weak_from_this(), *func, I {item});
+						return corowrap<F&&, void, I>(weak_from_this(), *func, I {std::move(item)});
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I>(weak_from_this(), std::move(func), I {item});
+						return corowrap<std::remove_cvref_t<F>, void, I>(weak_from_this(), std::move(func), I {std::move(item)});
 				} else {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1660,14 +1706,14 @@ namespace exathread {
 			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I>(weak_from_this(), *func, I {item});
+						return corowrap<F&&, void, I>(weak_from_this(), *func, I{std::move(item)});
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I>(weak_from_this(), std::move(func), I {item});
+						return corowrap<std::remove_cvref_t<F>, void, I>(weak_from_this(), std::move(func), I{std::move(item)});
 				} else {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<F&&, void, I, ExArgs...>(weak_from_this(), *func, I{std::move(item)}, std::forward<ExArgs...>(exargs...));
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(weak_from_this(), std::move(func), I{std::move(item)}, std::forward<ExArgs...>(exargs...));
 				} }();
 
 			//Enqueue task
@@ -1711,7 +1757,7 @@ namespace exathread {
 			this->task.promise().pool.lock()->push(std::move(task));
 		} else {
 			//Add to continuation list
-			this->task.promise().next.emplace_back(task);
+			this->task.promise().next.emplace_back(std::vector<Task> {task});
 		}
 
 		return fut;
@@ -1749,7 +1795,7 @@ namespace exathread {
 			this->task.promise().pool.lock()->push(std::move(task));
 		} else {
 			//Add to continuation list
-			this->task.promise().next.emplace_back(task);
+			this->task.promise().next.emplace_back(std::vector<Task> {task});
 		}
 	}
 
@@ -1770,14 +1816,14 @@ namespace exathread {
 			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {item});
+						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {std::move(item)});
 					else
-						return corowrap<std::remove_cvref_t<F>, T, I>(this->task.promise().pool, std::move(func), I {item});
+						return corowrap<std::remove_cvref_t<F>, T, I>(this->task.promise().pool, std::move(func), I {std::move(item)});
 				} else {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 					else
-						return corowrap<std::remove_cvref_t<F>, T, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<std::remove_cvref_t<F>, T, I, ExArgs...>(this->task.promise().pool, std::move(func), I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1793,7 +1839,7 @@ namespace exathread {
 				this->task.promise().pool.lock()->push(std::move(task));
 			} else {
 				//Add to continuation list
-				this->task.promise().next.emplace_back(task);
+				this->task.promise().next.emplace_back(std::vector<Task> {task});
 			}
 		}
 
@@ -1818,14 +1864,14 @@ namespace exathread {
 			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {item});
+						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {std::move(item)});
 					else
-						return corowrap<std::remove_cvref_t<F>, T, I>(this->task.promise().pool, std::move(func), I {item});
+						return corowrap<std::remove_cvref_t<F>, T, I>(this->task.promise().pool, std::move(func), I {std::move(item)});
 				} else {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<F&&, T, I, ExArgs...>(this->task.promise().pool, *func, I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 					else
-						return corowrap<std::remove_cvref_t<F>, T, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<std::remove_cvref_t<F>, T, I, ExArgs...>(this->task.promise().pool, std::move(func), I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1836,7 +1882,7 @@ namespace exathread {
 				this->task.promise().pool.lock()->push(std::move(task));
 			} else {
 				//Add to continuation list
-				this->task.promise().next.emplace_back(task);
+				this->task.promise().next.emplace_back(std::vector<Task> {task});
 			}
 		}
 	}
@@ -1872,7 +1918,7 @@ namespace exathread {
 			this->task.promise().pool.lock()->push(std::move(task));
 		} else {
 			//Add to continuation list
-			this->task.promise().next.emplace_back(task);
+			this->task.promise().next.emplace_back(std::vector<Task> {task});
 		}
 
 		return fut;
@@ -1905,7 +1951,7 @@ namespace exathread {
 			this->task.promise().pool.lock()->push(std::move(task));
 		} else {
 			//Add to continuation list
-			this->task.promise().next.emplace_back(task);
+			this->task.promise().next.emplace_back(std::vector<Task> {task});
 		}
 	}
 
@@ -1922,14 +1968,14 @@ namespace exathread {
 			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {item});
+						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {std::move(item)});
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I>(this->task.promise().pool, std::move(func), I {item});
+						return corowrap<std::remove_cvref_t<F>, void, I>(this->task.promise().pool, std::move(func), I {std::move(item)});
 				} else {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(this->task.promise().pool, std::move(func), I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1944,7 +1990,7 @@ namespace exathread {
 				this->task.promise().pool.lock()->push(std::move(task));
 			} else {
 				//Add to continuation list
-				this->task.promise().next.emplace_back(task);
+				this->task.promise().next.emplace_back(std::vector<Task> {task});
 			}
 		}
 
@@ -1965,14 +2011,14 @@ namespace exathread {
 			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {item});
+						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {std::move(item)});
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I>(this->task.promise().pool, std::move(func), I {item});
+						return corowrap<std::remove_cvref_t<F>, void, I>(this->task.promise().pool, std::move(func), I {std::move(item)});
 				} else {
 					if constexpr(is_function_like_v<F>)
-						return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<F&&, void, I, ExArgs...>(this->task.promise().pool, *func, I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 					else
-						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(this->task.promise().pool, std::move(func), I {item}, std::forward<ExArgs...>(exargs...));
+						return corowrap<std::remove_cvref_t<F>, void, I, ExArgs...>(this->task.promise().pool, std::move(func), I {std::move(item)}, std::forward<ExArgs...>(exargs...));
 				}
 			}();
 
@@ -1982,7 +2028,7 @@ namespace exathread {
 				this->task.promise().pool.lock()->push(std::move(task));
 			} else {
 				//Add to continuation list
-				this->task.promise().next.emplace_back(task);
+				this->task.promise().next.emplace_back(std::vector<Task> {task});
 			}
 		}
 	}
@@ -2031,7 +2077,6 @@ namespace exathread {
 		VoidTask vt = executor(*this, task, std::move(argset));
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
-		vt.promise().lambdaSrc = std::move(executor);
 		Future<R> fut;
 		fut.task = vt;
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
@@ -2082,7 +2127,6 @@ namespace exathread {
 		VoidTask vt = executor(*this, task, std::move(argset));
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
-		vt.promise().lambdaSrc = std::move(executor);
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
 	}
 
@@ -2171,7 +2215,6 @@ namespace exathread {
 		VoidTask vt = executor();
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
-		vt.promise().lambdaSrc = std::move(executor);
 		Future<R> fut;
 		fut.task = vt;
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
@@ -2215,10 +2258,7 @@ namespace exathread {
 		VoidTask vt = executor();
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
-		vt.promise().lambdaSrc = std::move(executor);
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
 	}
-
-	inline std::size_t Pool::totalThreads = 0;
 }
 ///@endcond
