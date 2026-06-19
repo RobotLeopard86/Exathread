@@ -72,7 +72,6 @@ namespace exathread {
 	 */
 	enum class Status {
 		Pending,  ///<The task has not yet been scheduled for execution
-		Scheduled,///<The task has been scheduled for execution but has not begun
 		Executing,///<The task is currently executing
 		Yielded,  ///<The task has yielded temporarily
 		Failed,	  ///<The task completed with an exception
@@ -153,6 +152,15 @@ namespace exathread {
 		 */
 		bool done() const noexcept {
 			return !h || h.done();
+		}
+
+		/**
+		 * @brief Check if a task's coroutine handle is still valid
+		 *
+		 * @return Handle validity state
+		 */
+		bool valid() const noexcept {
+			return (bool)h;
 		}
 
 		/**
@@ -252,7 +260,7 @@ namespace exathread {
 		/**
 		 * @brief Block until execution has completed, successfully or not
 		 */
-		void await();
+		void await() const noexcept;
 
 		/**
 		 * @brief Get the status of a future
@@ -403,7 +411,7 @@ namespace exathread {
 	template<>
 	class Future<void> {
 	  public:
-		void await();
+		void await() const noexcept;
 		Status checkStatus() const noexcept;
 
 		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
@@ -474,7 +482,7 @@ namespace exathread {
 		/**
 		 * @brief Block until all futures have completed execution
 		 */
-		void await();
+		void await() const noexcept;
 
 		/**
 		 * @brief Get the overall status of the collection
@@ -594,7 +602,7 @@ namespace exathread {
 		std::size_t size() const noexcept {
 			return futures.size();
 		}
-		void await();
+		void await() const noexcept;
 		Status checkStatus() const noexcept;
 
 		template<typename F, typename... ExArgs, typename R = details::result_t<std::invoke_result_t<F&&, ExArgs&&...>>>
@@ -930,7 +938,9 @@ namespace exathread {
 
 	inline Task::~Task() noexcept {
 		if(!h) return;
-		if(--(promise().handleRefCount) <= 0) {
+		if(promise().handleRefCount == 0) return;
+		if(promise().handleRefCount == 1) {
+			--(promise().handleRefCount);
 			h.destroy();
 		}
 	}
@@ -1041,7 +1051,7 @@ namespace exathread {
 
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
-	inline void Future<T>::await() {
+	inline void Future<T>::await() const noexcept {
 		Status s = checkStatus();
 		while(s != Status::Complete && s != Status::Failed) {
 			std::this_thread::yield();
@@ -1052,10 +1062,11 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline Status Future<T>::checkStatus() const noexcept {
+		if(!task.valid()) return Status::Failed;
 		return task.promise().status;
 	}
 
-	inline void Future<void>::await() {
+	inline void Future<void>::await() const noexcept {
 		Status s = checkStatus();
 		while(s != Status::Complete && s != Status::Failed) {
 			std::this_thread::yield();
@@ -1070,6 +1081,7 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline T& Future<T>::operator*() {
+		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1083,6 +1095,7 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline T Future<T>::operator*() const {
+		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1093,9 +1106,12 @@ namespace exathread {
 		return vp.val.value();
 	}
 
+	// clang-format off
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
-												inline T* Future<T>::operator->() {
+	inline T* Future<T>::operator->() {
+		// clang-format on
+		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1106,9 +1122,12 @@ namespace exathread {
 		return &(vp.val.value());
 	}
 
+	// clang-format off
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
-												inline const T* Future<T>::operator->() const {
+	inline const T* Future<T>::operator->() const {
+		// clang-format on
+		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1147,7 +1166,7 @@ namespace exathread {
 
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
-	inline void MultiFuture<T>::await() {
+	inline void MultiFuture<T>::await() const noexcept {
 		Status s = checkStatus();
 		while(s != Status::Complete && s != Status::Failed) {
 			std::this_thread::yield();
@@ -1174,17 +1193,19 @@ namespace exathread {
 		bool fail = false;
 		bool allDone = true;
 		for(const Future<T>& f : futures) {
-			if(f.checkStatus() == Status::Pending) allDone = false;
-			if(f.checkStatus() == Status::Scheduled) {
-				allDone = false;
-				s = Status::Scheduled;
-			}
-			if(f.checkStatus() == Status::Executing) {
-				allDone = false;
-				s = Status::Executing;
-			}
-			if(f.checkStatus() == Status::Failed) {
-				fail = true;
+			Status status = f.checkStatus();
+			switch(status) {
+				case Status::Pending:
+					allDone = false;
+					break;
+				case Status::Executing:
+					allDone = false;
+					s = Status::Executing;
+					break;
+				case Status::Failed:
+					fail = true;
+					break;
+				default: break;
 			}
 		}
 		if(allDone) s = (fail ? Status::Failed : Status::Complete);
@@ -1213,7 +1234,7 @@ namespace exathread {
 		}
 	}
 
-	inline void MultiFuture<void>::await() {
+	inline void MultiFuture<void>::await() const noexcept {
 		Status s = checkStatus();
 		while(s != Status::Complete && s != Status::Failed) {
 			std::this_thread::yield();
@@ -1226,17 +1247,20 @@ namespace exathread {
 		bool fail = false;
 		bool allDone = true;
 		for(const Future<void>& f : futures) {
-			if(f.checkStatus() == Status::Pending) allDone = false;
-			if(f.checkStatus() == Status::Scheduled) {
-				allDone = false;
-				s = Status::Scheduled;
-			}
-			if(f.checkStatus() == Status::Executing) {
-				allDone = false;
-				s = Status::Executing;
-			}
-			if(f.checkStatus() == Status::Failed) {
-				fail = true;
+			Status status = f.checkStatus();
+			switch(status) {
+				case Status::Pending:
+					allDone = false;
+					break;
+				case Status::Executing:
+				case Status::Yielded:
+					allDone = false;
+					s = Status::Executing;
+					break;
+				case Status::Failed:
+					fail = true;
+					break;
+				default: break;
 			}
 		}
 		if(allDone) s = (fail ? Status::Failed : Status::Complete);
@@ -2080,11 +2104,12 @@ namespace exathread {
 		};
 
 		//Schedule executor task
+		Task backup(task);
 		VoidTask vt = executor(*this, task, std::move(argset));
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
 		Future<R> fut;
-		fut.task = vt;
+		fut.task = std::move(backup);
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
 		return fut;
 	}
@@ -2149,7 +2174,7 @@ namespace exathread {
 		//Continue on each future
 		std::vector<Future<R>> continues;
 		for(Future<T>& fut : futures) {
-			auto t = [this, fut, func, exargs...]() {
+			auto t = [&fut, &func, &exargs...]() {
 				if constexpr(sizeof...(exargs) == 0) {
 					return fut.then(std::forward<F>(func));
 				} else {
@@ -2206,23 +2231,24 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task]() -> VoidTask {
+		const auto executor = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
 			//Wait for this to be done
-			co_await yieldUntilComplete(*this);
+			co_await yieldUntilComplete(multifut);
 
 			//If we succeded, we're good
-			if(checkStatus() == Status::Complete) {
+			if(multifut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
+				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
 			}
 		};
 
 		//Schedule executor task
-		VoidTask vt = executor();
+		Task backup(task);
+		VoidTask vt = executor(*this, task);
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
 		Future<R> fut;
-		fut.task = vt;
+		fut.task = std::move(backup);
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
 		return fut;
 	}
@@ -2249,19 +2275,19 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [this, task]() -> VoidTask {
+		const auto executor = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
 			//Wait for this to be done
-			co_await yieldUntilComplete(*this);
+			co_await yieldUntilComplete(multifut);
 
 			//If we succeded, we're good
-			if(checkStatus() == Status::Complete) {
+			if(multifut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(task))));
+				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
 			}
 		};
 
 		//Schedule executor task
-		VoidTask vt = executor();
+		VoidTask vt = executor(*this, task);
 		vt.promise().pool = futures[0].task.promise().pool;
 		vt.promise().status = Status::Pending;
 		futures[0].task.promise().pool.lock()->push(std::move(vt));
