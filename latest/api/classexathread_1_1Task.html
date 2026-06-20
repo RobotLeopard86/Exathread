@@ -442,8 +442,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task4TaskENSt16coroutine_handleIN7details7PromiseEEE">
-<span id="_CPPv3N9exathread4Task4TaskENSt16coroutine_handleIN7details7PromiseEEE"></span><span id="_CPPv2N9exathread4Task4TaskENSt16coroutine_handleIN7details7PromiseEEE"></span><span id="exathread::Task::Task__std::coroutine_handle:details::Promise:"></span><span class="target" id="classexathread_1_1Task_1ab364202b1d0aa77decbe4ff790ddc8b9"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Task</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">coroutine_handle</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Promise</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">h</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Task4TaskENSt16coroutine_handleIN7details7PromiseEEE" title="Link to this definition"><span/></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task4TaskENSt16coroutine_handleIN7details9PTypeBaseEEE">
+<span id="_CPPv3N9exathread4Task4TaskENSt16coroutine_handleIN7details9PTypeBaseEEE"></span><span id="_CPPv2N9exathread4Task4TaskENSt16coroutine_handleIN7details9PTypeBaseEEE"></span><span id="exathread::Task::Task__std::coroutine_handle:details::PTypeBase:"></span><span class="target" id="classexathread_1_1Task_1af94a968a2e7c8e069bf319a0e7f99be5"></span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Task</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">coroutine_handle</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">PTypeBase</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">h</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Task4TaskENSt16coroutine_handleIN7details9PTypeBaseEEE" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Create a task managing a coroutine. </p>
 </dd></dl>
 
@@ -488,17 +488,6 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK9exathread4Task5validEv">
-<span id="_CPPv3NK9exathread4Task5validEv"></span><span id="_CPPv2NK9exathread4Task5validEv"></span><span id="exathread::Task::validC"></span><span class="target" id="classexathread_1_1Task_1a3e1deb9cfd0b69b1073d5c96b98fda70"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">valid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK9exathread4Task5validEv" title="Link to this definition"><span/></a><br /></dt>
-<dd><p>Check if a task’s coroutine handle is still valid. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Handle validity state </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task6resumeEv">
 <span id="_CPPv3N9exathread4Task6resumeEv"></span><span id="_CPPv2N9exathread4Task6resumeEv"></span><span id="exathread::Task::resume"></span><span class="target" id="classexathread_1_1Task_1ae409e5cf7364895a499b511549bca437"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">resume</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Task6resumeEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Resume execution of a task. </p>
@@ -511,29 +500,35 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task7promiseEv">
-<span id="_CPPv3N9exathread4Task7promiseEv"></span><span id="_CPPv2N9exathread4Task7promiseEv"></span><span id="exathread::Task::promise"></span><span class="target" id="classexathread_1_1Task_1a46f575b7765606b5872f135f3c8c2fbf"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Promise</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">promise</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread4Task7promiseEv" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3N9exathread4Task7promiseEv"></span><span id="_CPPv2N9exathread4Task7promiseEv"></span><span id="exathread::Task::promise"></span><span class="target" id="classexathread_1_1Task_1a0ceb582a11c90dd05b7c6a0b1524a237"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Promise</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">promise</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N9exathread4Task7promiseEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Access the underlying promise. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The promise data </p>
+<dt class="field-odd">Throws<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If there is no associated promise </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The promise data</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK9exathread4Task7promiseEv">
-<span id="_CPPv3NK9exathread4Task7promiseEv"></span><span id="_CPPv2NK9exathread4Task7promiseEv"></span><span id="exathread::Task::promiseC"></span><span class="target" id="classexathread_1_1Task_1a3502e99944d76381c8e5a3819b7582a7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Promise</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">promise</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK9exathread4Task7promiseEv" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3NK9exathread4Task7promiseEv"></span><span id="_CPPv2NK9exathread4Task7promiseEv"></span><span id="exathread::Task::promiseC"></span><span class="target" id="classexathread_1_1Task_1a200ca0a88f7d8737123deb0c947a5ffa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Promise</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">promise</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK9exathread4Task7promiseEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Access the underlying promise. </p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The promise data </p>
+<dt class="field-odd">Throws<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">std</span><span class="p">::</span><span class="n">runtime_error</span></span></span> – If there is no associated promise </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The promise data</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N9exathread4Task6handleEv">
-<span id="_CPPv3N9exathread4Task6handleEv"></span><span id="_CPPv2N9exathread4Task6handleEv"></span><span id="exathread::Task::handle"></span><span class="target" id="classexathread_1_1Task_1a65ded89e7ddca16a3ac6830e781a51fd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">coroutine_handle</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Promise</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">handle</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread4Task6handleEv" title="Link to this definition"><span/></a><br /></dt>
+<span id="_CPPv3N9exathread4Task6handleEv"></span><span id="_CPPv2N9exathread4Task6handleEv"></span><span id="exathread::Task::handle"></span><span class="target" id="classexathread_1_1Task_1aef4a894abb6c937850cd1e10a13bc395"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">coroutine_handle</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">PTypeBase</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">handle</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N9exathread4Task6handleEv" title="Link to this definition"><span/></a><br /></dt>
 <dd><p>Access the handle to the managed coroutine. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -613,14 +608,13 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#class-documentation">Class Documentation</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4TaskE"><code class="docutils literal notranslate"><span class="pre">exathread::Task</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task4TaskEv"><code class="docutils literal notranslate"><span class="pre">Task()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task4TaskENSt16coroutine_handleIN7details7PromiseEEE"><code class="docutils literal notranslate"><span class="pre">Task()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task4TaskENSt16coroutine_handleIN7details9PTypeBaseEEE"><code class="docutils literal notranslate"><span class="pre">Task()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task4TaskERK4Task"><code class="docutils literal notranslate"><span class="pre">Task()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4TaskaSERK4Task"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task4TaskERR4Task"><code class="docutils literal notranslate"><span class="pre">Task()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4TaskaSERR4Task"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4TaskD0Ev"><code class="docutils literal notranslate"><span class="pre">~Task()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread4Task4doneEv"><code class="docutils literal notranslate"><span class="pre">done()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread4Task5validEv"><code class="docutils literal notranslate"><span class="pre">valid()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task6resumeEv"><code class="docutils literal notranslate"><span class="pre">resume()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N9exathread4Task7promiseEv"><code class="docutils literal notranslate"><span class="pre">promise()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK9exathread4Task7promiseEv"><code class="docutils literal notranslate"><span class="pre">promise()</span></code></a></li>
