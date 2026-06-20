@@ -743,11 +743,14 @@ namespace exathread {
 			requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 		friend class MultiFuture;
 
-		std::array<Task, 4096> ringbuf;
-		alignas(64) std::atomic<uint64_t> frontHead;
-		alignas(64) std::atomic<uint64_t> frontTail;
-		alignas(64) std::atomic<uint64_t> backHead;
-		alignas(64) std::atomic<uint64_t> backTail;
+		struct Slot {
+			std::atomic<uint64_t> sequence = 0;
+			Task t;
+		};
+
+		std::array<Slot, 4096> ringbuf;
+		alignas(64) std::atomic<uint64_t> front = 0;
+		alignas(64) std::atomic<uint64_t> back = 0;
 		void push(Task&& t);
 		Task pop();
 		std::size_t queueSize() const;
@@ -1564,80 +1567,75 @@ namespace exathread {
 	}
 
 	inline void Pool::push(Task&& t) {
+		//Prepare yield rules
+		constexpr static uint64_t MAX_SPIN = 256;
+		uint64_t spinCounter = 0;
+
 		//Reserve slot in ring buffer (CAS)
-		uint64_t bh0 = 0, bh1 = 0;
+		uint64_t b0 = 0, b1 = 0;
 		do {
-			//Advance indices with wrap-around protection
-			uint64_t ft = frontTail.load(std::memory_order_acquire);
-			bh0 = backHead.load(std::memory_order_acquire);
-			bh1 = bh0 + 1;
-			while((bh1 - ft) >= ringbuf.size()) {
-				std::this_thread::yield();
-				ft = frontTail.load(std::memory_order_acquire);
-				bh0 = backHead.load(std::memory_order_acquire);
-				bh1 = bh0 + 1;
-			}
-		} while(!backHead.compare_exchange_strong(bh0, bh1, std::memory_order_acq_rel, std::memory_order_relaxed));
+			//Advance indices to find unclaimed position
+			b0 = back.load(std::memory_order_acquire);
+			b1 = b0 + 1;
+			if((++spinCounter % MAX_SPIN) == 0) std::this_thread::yield();
+		} while(!back.compare_exchange_strong(b0, b1, std::memory_order_acq_rel, std::memory_order_relaxed));
+
+		//Check sequence number
+		Slot& s = ringbuf[b1 % ringbuf.size()];
+		uint64_t seq0;
+		spinCounter = 0;
+		while((seq0 = s.sequence.load(std::memory_order_acquire)) != b1) {
+			if((++spinCounter % MAX_SPIN) == 0) std::this_thread::yield();
+		}
 
 		//Write to reserved slot
-		ringbuf[bh1 % ringbuf.size()] = std::move(t);
+		s.t = std::move(t);
 
-		//Advance tail index when possible
-		uint64_t tailBase = backTail.load(std::memory_order_relaxed);
-		if(bh1 <= tailBase) return;
-		while(!backTail.compare_exchange_strong(tailBase, bh1, std::memory_order_release, std::memory_order_relaxed)) {
-			std::this_thread::yield();
-
-			//Make sure the tail hasn't passed what we thought it was
-			if(tailBase >= bh1) return;
-		}
+		//Update sequence number
+		s.sequence.store(b1 + 1, std::memory_order_release);
 	}
 
 	inline Task Pool::pop() {
 		while(true) {
+			//Prepare yield rules
+			constexpr static uint64_t MAX_SPIN = 256;
+			uint64_t spinCounter = 0;
+
 			//Check if empty
 			if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
 
 			//Reserve slot in ring buffer (CAS)
-			uint64_t fh0 = 0, fh1 = 0;
+			uint64_t f0 = 0, f1 = 0;
 			bool reset = false;
 			do {
-				//Advance indices
-				fh0 = frontHead.load(std::memory_order_acquire);
-				fh1 = fh0 + 1;
-
-				//Decrement prevention (tail was incremented while we were in the loop so we'd push it back if we continued)
-				if(fh1 < frontTail.load(std::memory_order_acquire)) {
-					reset = true;
-					break;
-				}
-
-				//Wrap-around prevention (head can't wrap around past tail)
-				if(fh1 - frontTail.load(std::memory_order_acquire) >= ringbuf.size()) {
-					reset = true;
-					break;
-				}
+				//Advance indices to find unclaimed position
+				f0 = front.load(std::memory_order_acquire);
+				f1 = f0 + 1;
 
 				//Index pass prevention (front can't get ahead of back)
-				if(fh1 > backTail.load(std::memory_order_acquire)) {
+				if(f1 > back.load(std::memory_order_acquire)) {
 					reset = true;
 					break;
 				}
-			} while(!frontHead.compare_exchange_strong(fh0, fh1, std::memory_order_acq_rel, std::memory_order_relaxed));
+
+				//Livelock prevention
+				if((++spinCounter % MAX_SPIN) == 0) std::this_thread::yield();
+			} while(!front.compare_exchange_strong(f0, f1, std::memory_order_acq_rel, std::memory_order_relaxed));
 			if(reset) continue;
 
-			//Read from safe slot
-			Task t = std::move(ringbuf[fh1 % ringbuf.size()]);
-
-			//Advance tail index when possible
-			uint64_t tailBase = frontTail.load(std::memory_order_relaxed);
-			if(fh1 <= tailBase) return t;
-			while(!frontTail.compare_exchange_strong(tailBase, fh1, std::memory_order_release, std::memory_order_relaxed)) {
-				std::this_thread::yield();
-
-				//Make sure the tail hasn't passed what we thought it was
-				if(tailBase >= fh1) return t;
+			//Check sequence number
+			Slot& s = ringbuf[f1 % ringbuf.size()];
+			uint64_t seq0;
+			spinCounter = 0;
+			while((seq0 = s.sequence.load(std::memory_order_acquire)) != (f1 + 1)) {
+				if((++spinCounter % MAX_SPIN) == 0) std::this_thread::yield();
 			}
+
+			//Read from safe slot
+			Task t = std::move(s.t);
+
+			//Update sequence number
+			s.sequence.store(f1 + ringbuf.size(), std::memory_order_release);
 
 			//Return value
 			return t;
@@ -1645,7 +1643,7 @@ namespace exathread {
 	}
 
 	inline std::size_t Pool::queueSize() const {
-		return backTail.load(std::memory_order_acquire) - frontTail.load(std::memory_order_acquire);
+		return back.load(std::memory_order_acquire) - front.load(std::memory_order_acquire);
 	}
 
 	inline std::size_t Pool::getThreadCount() const noexcept {
@@ -1669,6 +1667,11 @@ namespace exathread {
 			//Setup data
 			details::ThreadData& td = threads.emplace_back();
 			td.myIndex = i;
+		}
+
+		//Setup ring buffer sequence numbers
+		for(std::size_t i = 0; i < ringbuf.size(); ++i) {
+			ringbuf[i].sequence = i;
 		}
 	}
 
@@ -1841,7 +1844,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+		const auto scheduler = [](Future<T> fut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(fut);
 
@@ -1895,7 +1898,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+		const auto scheduler = [](Future<T> fut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(fut);
 
@@ -1949,7 +1952,7 @@ namespace exathread {
 			}();
 
 			//Create a task to wait until all results are collected and then run the continuation
-			const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+			const auto scheduler = [](Future<T> fut, Task t, decltype(argset) setargs) -> VoidTask {
 				//Wait for this to be done
 				co_await yieldUntilComplete(fut);
 
@@ -2010,7 +2013,7 @@ namespace exathread {
 			}();
 
 			//Create a task to wait until all results are collected and then run the continuation
-			const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+			const auto scheduler = [](Future<T> fut, Task t, decltype(argset) setargs) -> VoidTask {
 				//Wait for this to be done
 				co_await yieldUntilComplete(fut);
 
@@ -2058,7 +2061,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+		const auto scheduler = [](Future<void> fut, Task t) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(fut);
 
@@ -2105,7 +2108,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+		const auto scheduler = [](Future<void> fut, Task t) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(fut);
 
@@ -2152,7 +2155,7 @@ namespace exathread {
 			}();
 
 			//Create a task to wait until all results are collected and then run the continuation
-			const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+			const auto scheduler = [](Future<void> fut, Task t) -> VoidTask {
 				//Wait for this to be done
 				co_await yieldUntilComplete(fut);
 
@@ -2206,7 +2209,7 @@ namespace exathread {
 			}();
 
 			//Create a task to wait until all results are collected and then run the continuation
-			const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+			const auto scheduler = [](Future<void> fut, Task t) -> VoidTask {
 				//Wait for this to be done
 				co_await yieldUntilComplete(fut);
 
@@ -2255,7 +2258,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
+		const auto scheduler = [](MultiFuture<T> multifut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2305,7 +2308,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
+		const auto scheduler = [](MultiFuture<T> multifut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2396,7 +2399,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
+		const auto scheduler = [](MultiFuture<void> multifut, Task t) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2439,7 +2442,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto scheduler = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
+		const auto scheduler = [](MultiFuture<void> multifut, Task t) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
