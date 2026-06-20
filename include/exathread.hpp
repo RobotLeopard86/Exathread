@@ -883,6 +883,8 @@ namespace exathread {
 	};
 
 	struct details::VoidPromise : public Promise, public std::enable_shared_from_this<details::VoidPromise> {
+		VoidTask::promise_type* owner = nullptr;
+
 		void return_void() noexcept {}
 		Task get_return_object() noexcept override;
 		virtual ~VoidPromise() {}
@@ -898,8 +900,12 @@ namespace exathread {
 			return std::static_pointer_cast<details::Promise>(promise);
 		}
 
-		promise_type() : promise(std::make_shared<details::VoidPromise>()) {}
-		promise_type(std::shared_ptr<details::VoidPromise> pptr) : promise(pptr) {}
+		promise_type() : promise(std::make_shared<details::VoidPromise>()) {
+			promise->owner = this;
+		}
+		promise_type(std::shared_ptr<details::VoidPromise> pptr) : promise(pptr) {
+			promise->owner = this;
+		}
 
 		virtual ~promise_type() {}
 
@@ -908,22 +914,19 @@ namespace exathread {
 	};
 
 	inline Task details::VoidPromise::get_return_object() noexcept {
-		std::shared_ptr<details::VoidPromise> pptr = this->shared_from_this();
-		VoidTask::promise_type p(pptr);
-		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(p)};
+		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(*owner)};
 	}
 
 	template<typename T>
 		requires(!std::is_void_v<T>)
 	struct details::ValuePromise : public Promise, public std::enable_shared_from_this<details::ValuePromise<T>> {
 		std::optional<T> val;
+		typename ValueTask<T>::promise_type* owner = nullptr;
 
 		void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
 			val = std::move(value);
 		}
-
 		Task get_return_object() noexcept override;
-
 		virtual ~ValuePromise() {}
 	};
 
@@ -941,8 +944,12 @@ namespace exathread {
 			return std::static_pointer_cast<details::Promise>(promise);
 		}
 
-		promise_type() : promise(std::make_shared<details::ValuePromise<T>>()) {}
-		promise_type(std::shared_ptr<details::ValuePromise<T>> pptr) : promise(pptr) {}
+		promise_type() : promise(std::make_shared<details::ValuePromise<T>>()) {
+			promise->owner = this;
+		}
+		promise_type(std::shared_ptr<details::ValuePromise<T>> pptr) : promise(pptr) {
+			promise->owner = this;
+		}
 
 		virtual ~promise_type() {}
 
@@ -953,9 +960,7 @@ namespace exathread {
 	template<typename T>
 		requires(!std::is_void_v<T>)
 	inline Task details::ValuePromise<T>::get_return_object() noexcept {
-		std::shared_ptr<details::ValuePromise<T>> pptr = this->shared_from_this();
-		typename ValueTask<T>::promise_type p(pptr);
-		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(p)};
+		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(*owner)};
 	}
 
 	inline Task::Task(std::coroutine_handle<details::PTypeBase> handle) : h(handle), pptr(h.promise().p()) {
