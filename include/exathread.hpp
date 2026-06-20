@@ -88,6 +88,7 @@ namespace exathread {
 		struct ValuePromise;
 		struct YieldOp;
 		struct ThreadData;
+		class PTypeBase;
 
 		template<typename T>
 		struct result {
@@ -110,7 +111,8 @@ namespace exathread {
 	 */
 	class Task {
 	  private:
-		std::coroutine_handle<details::Promise> h;
+		std::coroutine_handle<details::PTypeBase> h;
+		std::shared_ptr<details::Promise> pptr;
 
 	  public:
 		/**
@@ -121,7 +123,7 @@ namespace exathread {
 		/**
 		 * @brief Create a task managing a coroutine
 		 */
-		explicit Task(std::coroutine_handle<details::Promise> h);
+		explicit Task(std::coroutine_handle<details::PTypeBase> h);
 
 		/**
 		 * @brief Copy construction
@@ -155,21 +157,12 @@ namespace exathread {
 		}
 
 		/**
-		 * @brief Check if a task's coroutine handle is still valid
-		 *
-		 * @return Handle validity state
-		 */
-		bool valid() const noexcept {
-			return (bool)h;
-		}
-
-		/**
 		 * @brief Resume execution of a task
 		 *
 		 * @throws std::logic_error If the task is done
 		 */
 		void resume() {
-			if(done()) throw std::logic_error("Cannot resume a done task!");
+			if(done()) throw std::logic_error("Cannot resume an already-finished task!");
 			h.resume();
 		}
 
@@ -177,18 +170,24 @@ namespace exathread {
 		 * @brief Access the underlying promise
 		 *
 		 * @return The promise data
+		 *
+		 * @throws std::runtime_error If there is no associated promise
 		 */
-		details::Promise& promise() noexcept {
-			return h.promise();
+		details::Promise& promise() {
+			if(!pptr) throw std::runtime_error("No associated promise!");
+			return *pptr;
 		}
 
 		/**
 		 * @brief Access the underlying promise
 		 *
 		 * @return The promise data
+		 *
+		 * @throws std::runtime_error If there is no associated promise
 		 */
-		const details::Promise& promise() const noexcept {
-			return h.promise();
+		const details::Promise& promise() const {
+			if(!pptr) throw std::runtime_error("No associated promise!");
+			return *pptr;
 		}
 
 		/**
@@ -196,7 +195,7 @@ namespace exathread {
 		 *
 		 * @return The coroutine handle
 		 */
-		std::coroutine_handle<details::Promise> handle() noexcept {
+		std::coroutine_handle<details::PTypeBase> handle() noexcept {
 			return h;
 		}
 
@@ -215,10 +214,12 @@ namespace exathread {
 	 */
 	class VoidTask : public Task {
 	  public:
+		///@cond
+		class promise_type;
 		using value_type = void;
-		using promise_type = details::VoidPromise;
+		///@endcond
 
-		explicit VoidTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
+		explicit VoidTask(std::coroutine_handle<details::PTypeBase> h) : Task(h) {}
 		VoidTask(Task&& t) : Task(std::move(t)) {}
 		VoidTask(VoidTask&& t) : Task(std::move(t)) {}
 	};
@@ -234,10 +235,12 @@ namespace exathread {
 		requires(!std::is_void_v<T>)
 	class ValueTask : public Task {
 	  public:
+		///@cond
+		class promise_type;
 		using value_type = T;
-		using promise_type = details::ValuePromise<T>;
+		///@endcond
 
-		explicit ValueTask(std::coroutine_handle<details::Promise> h) : Task(h) {}
+		explicit ValueTask(std::coroutine_handle<details::PTypeBase> h) : Task(h) {}
 		ValueTask(Task&& t) : Task(std::move(t)) {}
 		ValueTask(ValueTask&& t) : Task(std::move(t)) {}
 	};
@@ -825,7 +828,6 @@ namespace exathread {
 		std::weak_ptr<Pool> pool;			  //The pool of execution
 		std::size_t threadIdx;				  //The index of the thread this task is running on
 		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
-		std::vector<std::vector<Task>> next;  //The next task(s) to schedule after the completion of this one
 		std::function<void(std::any)> arg1Set;//The setter for the first argument (used for late-binding for continuations)
 
 		void unhandled_exception() noexcept {
@@ -838,14 +840,7 @@ namespace exathread {
 		}
 
 		std::suspend_always final_suspend() noexcept {
-			//Set status
 			status = exception ? Status::Failed : Status::Complete;
-
-			//Schedule continuations if success and pool still okay (double-check)
-			if(!exception && !pool.expired()) {
-				continuation();
-			}
-
 			return {};
 		}
 
@@ -855,92 +850,153 @@ namespace exathread {
 
 		Promise() : handleRefCount(0) {}
 
-	  private:
-		virtual void continuation() {}
+		virtual ~Promise() {}
 	};
 
-	struct details::VoidPromise : public Promise {
+	class details::PTypeBase {
+	  public:
+		Task get_return_object() noexcept {
+			return p()->get_return_object();
+		}
+
+		void unhandled_exception() noexcept {
+			p()->unhandled_exception();
+		}
+
+		std::suspend_always initial_suspend() noexcept {
+			return p()->initial_suspend();
+		}
+
+		std::suspend_always final_suspend() noexcept {
+			return p()->final_suspend();
+		}
+
+		virtual std::shared_ptr<details::Promise> p() {
+			return {};
+		}
+
+		details::Promise* operator->() {
+			return p().get();
+		}
+
+		virtual ~PTypeBase() {}
+	};
+
+	struct details::VoidPromise : public Promise, public std::enable_shared_from_this<details::VoidPromise> {
 		void return_void() noexcept {}
-
-		Task get_return_object() noexcept override {
-			return Task {std::coroutine_handle<details::Promise>::from_promise(*this)};
-		}
-
-		void continuation() override {
-			std::shared_ptr<Pool> p = pool.lock();
-			for(std::vector<Task>& t : next) {
-				for(Task& tsk : t) {
-					p->push(std::move(tsk));
-				}
-			}
-		}
+		Task get_return_object() noexcept override;
+		virtual ~VoidPromise() {}
 	};
+
+	class VoidTask::promise_type : public details::PTypeBase {
+	  public:
+		void return_void() {
+			promise->return_void();
+		}
+
+		std::shared_ptr<details::Promise> p() override {
+			return std::static_pointer_cast<details::Promise>(promise);
+		}
+
+		promise_type() : promise(std::make_shared<details::VoidPromise>()) {}
+		promise_type(std::shared_ptr<details::VoidPromise> pptr) : promise(pptr) {}
+
+		virtual ~promise_type() {}
+
+	  private:
+		std::shared_ptr<details::VoidPromise> promise;
+	};
+
+	inline Task details::VoidPromise::get_return_object() noexcept {
+		std::shared_ptr<details::VoidPromise> pptr = this->shared_from_this();
+		VoidTask::promise_type p(pptr);
+		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(p)};
+	}
 
 	template<typename T>
 		requires(!std::is_void_v<T>)
-	struct details::ValuePromise : public Promise {
+	struct details::ValuePromise : public Promise, public std::enable_shared_from_this<details::ValuePromise<T>> {
 		std::optional<T> val;
 
 		void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
 			val = std::move(value);
 		}
 
-		Task get_return_object() noexcept override {
-			return Task {std::coroutine_handle<details::Promise>::from_promise(*this)};
-		}
+		Task get_return_object() noexcept override;
 
-		void continuation() override {
-			std::shared_ptr<Pool> p = pool.lock();
-			for(std::vector<Task>& t : next) {
-				for(Task& tsk : t) {
-					tsk.promise().arg1Set(val.value());
-					p->push(std::move(tsk));
-				}
-			}
-		}
-
-		void* operator new(std::size_t size) {
-			auto ptr = ::operator new(size);
-			return ptr;
-		}
+		virtual ~ValuePromise() {}
 	};
 
-	inline Task::Task(std::coroutine_handle<details::Promise> h) : h(h) {
-		++(h.promise().handleRefCount);
+	template<typename T>
+		requires(!std::is_void_v<T>)
+	class ValueTask<T>::promise_type : public details::PTypeBase {
+	  public:
+		using value_type = T;
+
+		void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
+			return promise->return_value(value);
+		}
+
+		std::shared_ptr<details::Promise> p() override {
+			return std::static_pointer_cast<details::Promise>(promise);
+		}
+
+		promise_type() : promise(std::make_shared<details::ValuePromise<T>>()) {}
+		promise_type(std::shared_ptr<details::ValuePromise<T>> pptr) : promise(pptr) {}
+
+		virtual ~promise_type() {}
+
+	  private:
+		std::shared_ptr<details::ValuePromise<T>> promise;
+	};
+
+	template<typename T>
+		requires(!std::is_void_v<T>)
+	inline Task details::ValuePromise<T>::get_return_object() noexcept {
+		std::shared_ptr<details::ValuePromise<T>> pptr = this->shared_from_this();
+		typename ValueTask<T>::promise_type p(pptr);
+		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(p)};
 	}
 
-	inline Task::Task(const Task& other) noexcept : h(other.h) {
-		if(h) ++(h.promise().handleRefCount);
+	inline Task::Task(std::coroutine_handle<details::PTypeBase> handle) : h(handle), pptr(h.promise().p()) {
+		++(pptr->handleRefCount);
+	}
+
+	inline Task::Task(const Task& other) noexcept : h(other.h), pptr(other.pptr) {
+		if(h) ++(h.promise()->handleRefCount);
 	}
 
 	inline Task& Task::operator=(const Task& other) noexcept {
 		if(this != &other) {
-			if(h && --(h.promise().handleRefCount) == 0) {
+			if(h && --(pptr->handleRefCount) == 0) {
 				h.destroy();
 			}
 			h = other.h;
-			if(h) ++(h.promise().handleRefCount);
+			pptr = other.pptr;
+			if(h) ++(pptr->handleRefCount);
 		}
 		return *this;
 	}
 
-	inline Task::Task(Task&& other) noexcept : h(std::exchange(other.h, {})) {}
+	inline Task::Task(Task&& other) noexcept : h(std::exchange(other.h, {})), pptr(std::exchange(other.pptr, {})) {}
 
 	inline Task& Task::operator=(Task&& other) noexcept {
 		if(this != &other) {
-			if(h && --(h.promise().handleRefCount) == 0) {
+			if(h && --(pptr->handleRefCount) == 0) {
 				h.destroy();
 			}
 			h = std::exchange(other.h, {});
+			pptr = std::exchange(other.pptr, {});
 		}
 		return *this;
 	}
 
 	inline Task::~Task() noexcept {
 		if(!h) return;
-		if(promise().handleRefCount == 0) return;
-		if(promise().handleRefCount == 1) {
-			--(promise().handleRefCount);
+		if(!pptr) return;
+		if(pptr->handleRefCount == 0) return;
+		if(pptr->handleRefCount == 1) {
+			--(pptr->handleRefCount);
 			h.destroy();
 		}
 	}
@@ -966,7 +1022,7 @@ namespace exathread {
 			return predicate();
 		}
 
-		void await_suspend_core(std::coroutine_handle<details::Promise> h) {
+		void await_suspend_core(std::coroutine_handle<details::PTypeBase> h) {
 			//Get the task and mark it as yielded
 			task = Task {h};
 			task.promise().status = Status::Yielded;
@@ -975,15 +1031,15 @@ namespace exathread {
 			task.promise().pool.lock()->threads[task.promise().threadIdx].yields.push_back(*this);
 		}
 
-		void await_suspend(std::coroutine_handle<details::VoidPromise> vph) {
-			std::coroutine_handle<details::Promise> h = std::coroutine_handle<details::Promise>::from_address(vph.address());
+		void await_suspend(std::coroutine_handle<VoidTask::promise_type> ph) {
+			std::coroutine_handle<details::PTypeBase> h = std::coroutine_handle<details::PTypeBase>::from_address(ph.address());
 			await_suspend_core(h);
 		}
 
 		template<typename T>
-			requires(!std::is_void_v<T>)
-		void await_suspend(std::coroutine_handle<details::ValuePromise<T>> vph) {
-			std::coroutine_handle<details::Promise> h = std::coroutine_handle<details::Promise>::from_address(vph.address());
+			requires std::is_same_v<T, typename ValueTask<typename T::value_type>::promise_type>
+		void await_suspend(std::coroutine_handle<T> ph) {
+			std::coroutine_handle<details::PTypeBase> h = std::coroutine_handle<details::PTypeBase>::from_address(ph.address());
 			await_suspend_core(h);
 		}
 
@@ -1062,8 +1118,11 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline Status Future<T>::checkStatus() const noexcept {
-		if(!task.valid()) return Status::Failed;
-		return task.promise().status;
+		try {
+			return task.promise().status;
+		} catch(...) {
+			return Status::Failed;
+		}
 	}
 
 	inline void Future<void>::await() const noexcept {
@@ -1075,13 +1134,16 @@ namespace exathread {
 	}
 
 	inline Status Future<void>::checkStatus() const noexcept {
-		return task.promise().status;
+		try {
+			return task.promise().status;
+		} catch(...) {
+			return Status::Failed;
+		}
 	}
 
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline T& Future<T>::operator*() {
-		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1095,7 +1157,6 @@ namespace exathread {
 	template<typename T>
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline T Future<T>::operator*() const {
-		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1111,7 +1172,6 @@ namespace exathread {
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline T* Future<T>::operator->() {
 		// clang-format on
-		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1127,7 +1187,6 @@ namespace exathread {
 		requires std::is_copy_constructible_v<T> || std::is_void_v<T>
 	inline const T* Future<T>::operator->() const {
 		// clang-format on
-		if(!task.valid()) throw std::runtime_error("Task handle is invalid; cannot retrieve value! (future may have been moved from)");
 		Status s = checkStatus();
 		if(s != Status::Complete && s != Status::Failed) await();
 		s = checkStatus();
@@ -1646,7 +1705,7 @@ namespace exathread {
 		requires std::invocable<F&&, Args&&...>
 	inline Future<R> Pool::submit(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), args...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), args...]() mutable {
 			if constexpr(sizeof...(args) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, void>(weak_from_this(), *func);
@@ -1662,10 +1721,10 @@ namespace exathread {
 
 		//Create future object
 		Future<R> fut;
-		fut.task = task;
+		fut.task = newTask;
 
 		//Enqueue task
-		push(std::move(task));
+		push(std::move(newTask));
 
 		//Return future
 		return fut;
@@ -1675,7 +1734,7 @@ namespace exathread {
 		requires std::invocable<F&&, Args&&...> && std::is_void_v<details::result_t<std::invoke_result_t<F&&, Args&&...>>>
 	inline void Pool::submitDetached(F&& func, Args&&... args) {
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), args...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), args...]() mutable {
 			if constexpr(sizeof...(args) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, void>(weak_from_this(), *func);
@@ -1689,7 +1748,7 @@ namespace exathread {
 			} }();
 
 		//Enqueue task
-		push(std::move(task));
+		push(std::move(newTask));
 	}
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
@@ -1699,7 +1758,7 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
+			auto [newTask, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
 						return corowrap<F&&, void, I>(weak_from_this(), *func, I {std::move(item)});
@@ -1715,11 +1774,11 @@ namespace exathread {
 
 			//Create future object
 			Future<R> fut;
-			fut.task = task;
+			fut.task = newTask;
 			futs.push_back(std::move(fut));
 
 			//Enqueue task
-			push(std::move(task));
+			push(std::move(newTask));
 		}
 
 		//Create multi-future
@@ -1733,7 +1792,7 @@ namespace exathread {
 		//Generate and enqueue tasks
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
+			auto [newTask, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
 						return corowrap<F&&, void, I>(weak_from_this(), *func, I{std::move(item)});
@@ -1747,7 +1806,7 @@ namespace exathread {
 				} }();
 
 			//Enqueue task
-			push(std::move(task));
+			push(std::move(newTask));
 		}
 	}
 
@@ -1762,7 +1821,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, T>(this->task.promise().pool, *func);
@@ -1776,20 +1835,32 @@ namespace exathread {
 			}
 		}();
 
-		//Create future
+		//Create a task to wait until all results are collected and then run the continuation
+		const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+			//Wait for this to be done
+			co_await yieldUntilComplete(fut);
+
+			//If we succeded, we're good
+			if(fut.checkStatus() == Status::Complete) {
+				//Bind results
+				setargs(*fut);
+
+				//Schedule continuation
+				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+			} else {
+				t.promise().status = Status::Failed;
+				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+				t.handle().destroy();
+			}
+		};
+
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
+		schedulerTask.promise().pool = task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
-		fut.task = task;
-
-		//Schedule
-		if(checkStatus() == Status::Complete) {
-			//Set arguments and schedule now
-			argset(*(*this));
-			this->task.promise().pool.lock()->push(std::move(task));
-		} else {
-			//Add to continuation list
-			this->task.promise().next.emplace_back(std::vector<Task> {task});
-		}
-
+		fut.task = std::move(newTask);
+		task.promise().pool.lock()->push(std::move(schedulerTask));
 		return fut;
 	}
 
@@ -1804,7 +1875,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, T>(this->task.promise().pool, *func);
@@ -1818,15 +1889,30 @@ namespace exathread {
 			}
 		}();
 
-		//Schedule
-		if(checkStatus() == Status::Complete) {
-			//Set arguments and schedule now
-			argset(*(*this));
-			this->task.promise().pool.lock()->push(std::move(task));
-		} else {
-			//Add to continuation list
-			this->task.promise().next.emplace_back(std::vector<Task> {task});
-		}
+		//Create a task to wait until all results are collected and then run the continuation
+		const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+			//Wait for this to be done
+			co_await yieldUntilComplete(fut);
+
+			//If we succeded, we're good
+			if(fut.checkStatus() == Status::Complete) {
+				//Bind results
+				setargs(*fut);
+
+				//Schedule continuation
+				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+			} else {
+				t.promise().status = Status::Failed;
+				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+				t.handle().destroy();
+			}
+		};
+
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
+		schedulerTask.promise().pool = task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
+		task.promise().pool.lock()->push(std::move(schedulerTask));
 	}
 
 	// clang-format off
@@ -1843,7 +1929,7 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
+			auto [newTask, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
 						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {std::move(item)});
@@ -1857,20 +1943,33 @@ namespace exathread {
 				}
 			}();
 
-			//Create future object
-			Future<R> fut;
-			fut.task = task;
-			futs.push_back(std::move(fut));
+			//Create a task to wait until all results are collected and then run the continuation
+			const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+				//Wait for this to be done
+				co_await yieldUntilComplete(fut);
 
-			//Schedule
-			if(checkStatus() == Status::Complete) {
-				//Set arguments and schedule now
-				argset(*(*this));
-				this->task.promise().pool.lock()->push(std::move(task));
-			} else {
-				//Add to continuation list
-				this->task.promise().next.emplace_back(std::vector<Task> {task});
-			}
+				//If we succeded, we're good
+				if(fut.checkStatus() == Status::Complete) {
+					//Bind results
+					setargs(*fut);
+
+					//Schedule continuation
+					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				} else {
+					t.promise().status = Status::Failed;
+					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+					t.handle().destroy();
+				}
+			};
+
+			//Push scheduler task
+			VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
+			schedulerTask.promise().pool = task.promise().pool;
+			schedulerTask.promise().status = Status::Pending;
+			Future<R> fut;
+			fut.task = std::move(newTask);
+			task.promise().pool.lock()->push(std::move(schedulerTask));
+			futs.push_back(std::move(fut));
 		}
 
 		//Create multi-future
@@ -1891,7 +1990,7 @@ namespace exathread {
 		//Generate & enqueue tasks
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
+			auto [newTask, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
 						return corowrap<F&&, T, I>(this->task.promise().pool, *func, I {std::move(item)});
@@ -1905,15 +2004,30 @@ namespace exathread {
 				}
 			}();
 
-			//Schedule
-			if(checkStatus() == Status::Complete) {
-				//Set arguments and schedule now
-				argset(*(*this));
-				this->task.promise().pool.lock()->push(std::move(task));
-			} else {
-				//Add to continuation list
-				this->task.promise().next.emplace_back(std::vector<Task> {task});
-			}
+			//Create a task to wait until all results are collected and then run the continuation
+			const auto scheduler = [](Future<T>& fut, Task t, decltype(argset) setargs) -> VoidTask {
+				//Wait for this to be done
+				co_await yieldUntilComplete(fut);
+
+				//If we succeded, we're good
+				if(fut.checkStatus() == Status::Complete) {
+					//Bind results
+					setargs(*fut);
+
+					//Schedule continuation
+					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				} else {
+					t.promise().status = Status::Failed;
+					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+					t.handle().destroy();
+				}
+			};
+
+			//Push scheduler task
+			VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
+			schedulerTask.promise().pool = task.promise().pool;
+			schedulerTask.promise().status = Status::Pending;
+			task.promise().pool.lock()->push(std::move(schedulerTask));
 		}
 	}
 
@@ -1924,7 +2038,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, void>(this->task.promise().pool, *func);
@@ -1938,19 +2052,29 @@ namespace exathread {
 			}
 		}();
 
-		//Create future
+		//Create a task to wait until all results are collected and then run the continuation
+		const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+			//Wait for this to be done
+			co_await yieldUntilComplete(fut);
+
+			//If we succeded, we're good
+			if(fut.checkStatus() == Status::Complete) {
+				//Schedule continuation
+				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+			} else {
+				t.promise().status = Status::Failed;
+				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+				t.handle().destroy();
+			}
+		};
+
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask);
+		schedulerTask.promise().pool = task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
-		fut.task = task;
-
-		//Schedule
-		if(checkStatus() == Status::Complete) {
-			//Set arguments and schedule now
-			this->task.promise().pool.lock()->push(std::move(task));
-		} else {
-			//Add to continuation list
-			this->task.promise().next.emplace_back(std::vector<Task> {task});
-		}
-
+		fut.task = std::move(newTask);
+		task.promise().pool.lock()->push(std::move(schedulerTask));
 		return fut;
 	}
 
@@ -1961,7 +2085,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed task!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, void>(this->task.promise().pool, *func);
@@ -1975,14 +2099,27 @@ namespace exathread {
 			}
 		}();
 
-		//Schedule
-		if(checkStatus() == Status::Complete) {
-			//Set arguments and schedule now
-			this->task.promise().pool.lock()->push(std::move(task));
-		} else {
-			//Add to continuation list
-			this->task.promise().next.emplace_back(std::vector<Task> {task});
-		}
+		//Create a task to wait until all results are collected and then run the continuation
+		const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+			//Wait for this to be done
+			co_await yieldUntilComplete(fut);
+
+			//If we succeded, we're good
+			if(fut.checkStatus() == Status::Complete) {
+				//Schedule continuation
+				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+			} else {
+				t.promise().status = Status::Failed;
+				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+				t.handle().destroy();
+			}
+		};
+
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask);
+		schedulerTask.promise().pool = task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
+		task.promise().pool.lock()->push(std::move(schedulerTask));
 	}
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
@@ -1995,7 +2132,7 @@ namespace exathread {
 		std::vector<Future<R>> futs;
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
+			auto [newTask, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
 						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {std::move(item)});
@@ -2009,19 +2146,30 @@ namespace exathread {
 				}
 			}();
 
-			//Create future object
-			Future<R> fut;
-			fut.task = task;
-			futs.push_back(std::move(fut));
+			//Create a task to wait until all results are collected and then run the continuation
+			const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+				//Wait for this to be done
+				co_await yieldUntilComplete(fut);
 
-			//Schedule
-			if(checkStatus() == Status::Complete) {
-				//Set arguments and schedule now
-				this->task.promise().pool.lock()->push(std::move(task));
-			} else {
-				//Add to continuation list
-				this->task.promise().next.emplace_back(std::vector<Task> {task});
-			}
+				//If we succeded, we're good
+				if(fut.checkStatus() == Status::Complete) {
+					//Schedule continuation
+					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				} else {
+					t.promise().status = Status::Failed;
+					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+					t.handle().destroy();
+				}
+			};
+
+			//Push scheduler task
+			VoidTask schedulerTask = scheduler(*this, newTask);
+			schedulerTask.promise().pool = task.promise().pool;
+			schedulerTask.promise().status = Status::Pending;
+			Future<R> fut;
+			fut.task = std::move(newTask);
+			task.promise().pool.lock()->push(std::move(schedulerTask));
+			futs.push_back(std::move(fut));
 		}
 
 		//Create multi-future
@@ -2038,7 +2186,7 @@ namespace exathread {
 		//Generate & enqueue tasks
 		for(I item : src) {
 			//Wrap for argument binding and coroutine conversion
-			auto [task, argset] = [this, func = std::move(func), item, exargs...]() mutable {
+			auto [newTask, argset] = [this, func = std::move(func), item, exargs...]() mutable {
 				if constexpr(sizeof...(exargs) == 0) {
 					if constexpr(is_function_like_v<F>)
 						return corowrap<F&&, void, I>(this->task.promise().pool, *func, I {std::move(item)});
@@ -2052,14 +2200,27 @@ namespace exathread {
 				}
 			}();
 
-			//Schedule
-			if(checkStatus() == Status::Complete) {
-				//Set arguments and schedule now
-				this->task.promise().pool.lock()->push(std::move(task));
-			} else {
-				//Add to continuation list
-				this->task.promise().next.emplace_back(std::vector<Task> {task});
-			}
+			//Create a task to wait until all results are collected and then run the continuation
+			const auto scheduler = [](Future<void>& fut, Task t) -> VoidTask {
+				//Wait for this to be done
+				co_await yieldUntilComplete(fut);
+
+				//If we succeded, we're good
+				if(fut.checkStatus() == Status::Complete) {
+					//Schedule continuation
+					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				} else {
+					t.promise().status = Status::Failed;
+					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
+					t.handle().destroy();
+				}
+			};
+
+			//Push scheduler task
+			VoidTask schedulerTask = scheduler(*this, newTask);
+			schedulerTask.promise().pool = task.promise().pool;
+			schedulerTask.promise().status = Status::Pending;
+			task.promise().pool.lock()->push(std::move(schedulerTask));
 		}
 	}
 
@@ -2074,7 +2235,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
@@ -2089,7 +2250,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
+		const auto scheduler = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2103,14 +2264,13 @@ namespace exathread {
 			}
 		};
 
-		//Schedule executor task
-		Task backup(task);
-		VoidTask vt = executor(*this, task, std::move(argset));
-		vt.promise().pool = futures[0].task.promise().pool;
-		vt.promise().status = Status::Pending;
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
+		schedulerTask.promise().pool = futures[0].task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
-		fut.task = std::move(backup);
-		futures[0].task.promise().pool.lock()->push(std::move(vt));
+		fut.task = std::move(newTask);
+		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
 		return fut;
 	}
 
@@ -2125,7 +2285,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, std::vector<T>>(futures[0].task.promise().pool, *func);
@@ -2140,7 +2300,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
+		const auto scheduler = [](MultiFuture<T>& multifut, Task t, decltype(argset) setargs) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2154,11 +2314,11 @@ namespace exathread {
 			}
 		};
 
-		//Schedule executor task
-		VoidTask vt = executor(*this, task, std::move(argset));
-		vt.promise().pool = futures[0].task.promise().pool;
-		vt.promise().status = Status::Pending;
-		futures[0].task.promise().pool.lock()->push(std::move(vt));
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
+		schedulerTask.promise().pool = futures[0].task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
+		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
 	}
 
 	// clang-format off
@@ -2216,7 +2376,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
@@ -2231,7 +2391,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
+		const auto scheduler = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2242,14 +2402,13 @@ namespace exathread {
 			}
 		};
 
-		//Schedule executor task
-		Task backup(task);
-		VoidTask vt = executor(*this, task);
-		vt.promise().pool = futures[0].task.promise().pool;
-		vt.promise().status = Status::Pending;
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask);
+		schedulerTask.promise().pool = futures[0].task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
-		fut.task = std::move(backup);
-		futures[0].task.promise().pool.lock()->push(std::move(vt));
+		fut.task = std::move(newTask);
+		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
 		return fut;
 	}
 
@@ -2260,7 +2419,7 @@ namespace exathread {
 		if(checkStatus() == Status::Failed) throw std::logic_error("Cannot continue a failed multi-future!");
 
 		//Wrap for argument binding and coroutine conversion
-		auto [task, argset] = [this, func = std::move(func), exargs...]() mutable {
+		auto [newTask, argset] = [this, func = std::move(func), exargs...]() mutable {
 			if constexpr(sizeof...(exargs) == 0) {
 				if constexpr(is_function_like_v<F>)
 					return corowrap<F&&, void>(futures[0].task.promise().pool, *func);
@@ -2275,7 +2434,7 @@ namespace exathread {
 		}();
 
 		//Create a task to wait until all results are collected and then run the continuation
-		const auto executor = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
+		const auto scheduler = [](MultiFuture<void>& multifut, Task t) -> VoidTask {
 			//Wait for this to be done
 			co_await yieldUntilComplete(multifut);
 
@@ -2286,11 +2445,11 @@ namespace exathread {
 			}
 		};
 
-		//Schedule executor task
-		VoidTask vt = executor(*this, task);
-		vt.promise().pool = futures[0].task.promise().pool;
-		vt.promise().status = Status::Pending;
-		futures[0].task.promise().pool.lock()->push(std::move(vt));
+		//Push scheduler task
+		VoidTask schedulerTask = scheduler(*this, newTask);
+		schedulerTask.promise().pool = futures[0].task.promise().pool;
+		schedulerTask.promise().status = Status::Pending;
+		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
 	}
 }
 ///@endcond

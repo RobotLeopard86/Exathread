@@ -10,6 +10,7 @@
 #include <vector>
 
 static std::atomic<int> counter {0};
+
 static void increment() {
 	++counter;
 }
@@ -58,7 +59,6 @@ int main() {
 
 	//---- void -> int then (VoidPromise fires a ValueTask continuation) ----
 	{
-
 		auto fut = pool->submit(noop);
 		auto intFut = fut.then(produceVal);
 		if(*intFut != 99) {
