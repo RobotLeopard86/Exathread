@@ -1670,7 +1670,8 @@ namespace exathread {
 		}
 
 		//Setup ring buffer sequence numbers
-		for(std::size_t i = 0; i < ringbuf.size(); ++i) {
+		ringbuf[0].sequence = ringbuf.size();
+		for(std::size_t i = 1; i < ringbuf.size(); ++i) {
 			ringbuf[i].sequence = i;
 		}
 	}
