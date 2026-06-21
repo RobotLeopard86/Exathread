@@ -751,7 +751,7 @@ namespace exathread {
 		std::array<Slot, 4096> ringbuf;
 		alignas(64) std::atomic<uint64_t> front = 0;
 		alignas(64) std::atomic<uint64_t> back = 0;
-		void push(Task&& t);
+		void push(Task& t);
 		Task pop();
 		std::size_t queueSize() const;
 	};
@@ -976,9 +976,6 @@ namespace exathread {
 
 	inline Task& Task::operator=(const Task& other) noexcept {
 		if(this != &other) {
-			if(h && --(pptr->handleRefCount) == 0) {
-				h.destroy();
-			}
 			h = other.h;
 			pptr = other.pptr;
 			if(h) ++(pptr->handleRefCount);
@@ -990,9 +987,6 @@ namespace exathread {
 
 	inline Task& Task::operator=(Task&& other) noexcept {
 		if(this != &other) {
-			if(h && --(pptr->handleRefCount) == 0) {
-				h.destroy();
-			}
 			h = std::exchange(other.h, {});
 			pptr = std::exchange(other.pptr, {});
 		}
@@ -1566,7 +1560,7 @@ namespace exathread {
 		}
 	}
 
-	inline void Pool::push(Task&& t) {
+	inline void Pool::push(Task& t) {
 		//Prepare yield rules
 		constexpr static uint64_t MAX_SPIN = 256;
 		uint64_t spinCounter = 0;
@@ -1589,7 +1583,7 @@ namespace exathread {
 		}
 
 		//Write to reserved slot
-		s.t = std::move(t);
+		s.t = t;
 
 		//Update sequence number
 		s.sequence.store(b1 + 1, std::memory_order_release);
@@ -1733,7 +1727,7 @@ namespace exathread {
 		fut.task = newTask;
 
 		//Enqueue task
-		push(std::move(newTask));
+		push(newTask);
 
 		//Return future
 		return fut;
@@ -1757,7 +1751,7 @@ namespace exathread {
 			} }();
 
 		//Enqueue task
-		push(std::move(newTask));
+		push(newTask);
 	}
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
@@ -1787,7 +1781,7 @@ namespace exathread {
 			futs.push_back(std::move(fut));
 
 			//Enqueue task
-			push(std::move(newTask));
+			push(newTask);
 		}
 
 		//Create multi-future
@@ -1815,7 +1809,7 @@ namespace exathread {
 				} }();
 
 			//Enqueue task
-			push(std::move(newTask));
+			push(newTask);
 		}
 	}
 
@@ -1855,7 +1849,7 @@ namespace exathread {
 				setargs(*fut);
 
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -1869,7 +1863,7 @@ namespace exathread {
 		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
 		fut.task = std::move(newTask);
-		task.promise().pool.lock()->push(std::move(schedulerTask));
+		task.promise().pool.lock()->push(schedulerTask);
 		return fut;
 	}
 
@@ -1909,7 +1903,7 @@ namespace exathread {
 				setargs(*fut);
 
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -1921,7 +1915,7 @@ namespace exathread {
 		VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
 		schedulerTask.promise().pool = task.promise().pool;
 		schedulerTask.promise().status = Status::Pending;
-		task.promise().pool.lock()->push(std::move(schedulerTask));
+		task.promise().pool.lock()->push(schedulerTask);
 	}
 
 	// clang-format off
@@ -1963,7 +1957,7 @@ namespace exathread {
 					setargs(*fut);
 
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -1977,7 +1971,7 @@ namespace exathread {
 			schedulerTask.promise().status = Status::Pending;
 			Future<R> fut;
 			fut.task = std::move(newTask);
-			task.promise().pool.lock()->push(std::move(schedulerTask));
+			task.promise().pool.lock()->push(schedulerTask);
 			futs.push_back(std::move(fut));
 		}
 
@@ -2024,7 +2018,7 @@ namespace exathread {
 					setargs(*fut);
 
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2036,7 +2030,7 @@ namespace exathread {
 			VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
 			schedulerTask.promise().pool = task.promise().pool;
 			schedulerTask.promise().status = Status::Pending;
-			task.promise().pool.lock()->push(std::move(schedulerTask));
+			task.promise().pool.lock()->push(schedulerTask);
 		}
 	}
 
@@ -2069,7 +2063,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(fut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2083,7 +2077,7 @@ namespace exathread {
 		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
 		fut.task = std::move(newTask);
-		task.promise().pool.lock()->push(std::move(schedulerTask));
+		task.promise().pool.lock()->push(schedulerTask);
 		return fut;
 	}
 
@@ -2116,7 +2110,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(fut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2128,7 +2122,7 @@ namespace exathread {
 		VoidTask schedulerTask = scheduler(*this, newTask);
 		schedulerTask.promise().pool = task.promise().pool;
 		schedulerTask.promise().status = Status::Pending;
-		task.promise().pool.lock()->push(std::move(schedulerTask));
+		task.promise().pool.lock()->push(schedulerTask);
 	}
 
 	template<std::ranges::input_range Rn, typename F, typename... ExArgs, typename I, typename R>
@@ -2163,7 +2157,7 @@ namespace exathread {
 				//If we succeded, we're good
 				if(fut.checkStatus() == Status::Complete) {
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2177,7 +2171,7 @@ namespace exathread {
 			schedulerTask.promise().status = Status::Pending;
 			Future<R> fut;
 			fut.task = std::move(newTask);
-			task.promise().pool.lock()->push(std::move(schedulerTask));
+			task.promise().pool.lock()->push(schedulerTask);
 			futs.push_back(std::move(fut));
 		}
 
@@ -2217,7 +2211,7 @@ namespace exathread {
 				//If we succeded, we're good
 				if(fut.checkStatus() == Status::Complete) {
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2229,7 +2223,7 @@ namespace exathread {
 			VoidTask schedulerTask = scheduler(*this, newTask);
 			schedulerTask.promise().pool = task.promise().pool;
 			schedulerTask.promise().status = Status::Pending;
-			task.promise().pool.lock()->push(std::move(schedulerTask));
+			task.promise().pool.lock()->push(schedulerTask);
 		}
 	}
 
@@ -2269,7 +2263,7 @@ namespace exathread {
 				setargs(multifut.results());
 
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			}
 		};
 
@@ -2279,7 +2273,7 @@ namespace exathread {
 		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
 		fut.task = std::move(newTask);
-		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
+		futures[0].task.promise().pool.lock()->push(schedulerTask);
 		return fut;
 	}
 
@@ -2319,7 +2313,7 @@ namespace exathread {
 				setargs(multifut.results());
 
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			}
 		};
 
@@ -2327,7 +2321,7 @@ namespace exathread {
 		VoidTask schedulerTask = scheduler(*this, newTask, std::move(argset));
 		schedulerTask.promise().pool = futures[0].task.promise().pool;
 		schedulerTask.promise().status = Status::Pending;
-		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
+		futures[0].task.promise().pool.lock()->push(schedulerTask);
 	}
 
 	// clang-format off
@@ -2407,7 +2401,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(multifut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			}
 		};
 
@@ -2417,7 +2411,7 @@ namespace exathread {
 		schedulerTask.promise().status = Status::Pending;
 		Future<R> fut;
 		fut.task = std::move(newTask);
-		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
+		futures[0].task.promise().pool.lock()->push(schedulerTask);
 		return fut;
 	}
 
@@ -2450,7 +2444,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(multifut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(std::move(const_cast<Task&>(static_cast<const Task&>(t))));
+				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
 			}
 		};
 
@@ -2458,7 +2452,7 @@ namespace exathread {
 		VoidTask schedulerTask = scheduler(*this, newTask);
 		schedulerTask.promise().pool = futures[0].task.promise().pool;
 		schedulerTask.promise().status = Status::Pending;
-		futures[0].task.promise().pool.lock()->push(std::move(schedulerTask));
+		futures[0].task.promise().pool.lock()->push(schedulerTask);
 	}
 }
 ///@endcond
