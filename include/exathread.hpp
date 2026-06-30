@@ -145,16 +145,12 @@ namespace exathread {
 		 */
 		Task& operator=(Task&& other) noexcept;
 
-		~Task() noexcept;
-
 		/**
 		 * @brief Check if a task has completed execution
 		 *
 		 * @return Completion state
 		 */
-		bool done() const noexcept {
-			return !h || h.done();
-		}
+		bool done() const noexcept;
 
 		/**
 		 * @brief Resume execution of a task
@@ -830,7 +826,6 @@ namespace exathread {
 		Status status;						  //The status of the task
 		std::weak_ptr<Pool> pool;			  //The pool of execution
 		std::size_t threadIdx;				  //The index of the thread this task is running on
-		std::atomic_uint handleRefCount;	  //Reference count for how many tasks maintain the coroutine handle
 		std::function<void(std::any)> arg1Set;//The setter for the first argument (used for late-binding for continuations)
 
 		void unhandled_exception() noexcept {
@@ -842,7 +837,7 @@ namespace exathread {
 			return {};
 		}
 
-		std::suspend_always final_suspend() noexcept {
+		std::suspend_never final_suspend() noexcept {
 			status = exception ? Status::Failed : Status::Complete;
 			return {};
 		}
@@ -850,8 +845,6 @@ namespace exathread {
 		virtual Task get_return_object() noexcept {
 			return {};
 		}
-
-		Promise() : handleRefCount(0) {}
 
 		virtual ~Promise() {}
 	};
@@ -870,7 +863,7 @@ namespace exathread {
 			return p()->initial_suspend();
 		}
 
-		std::suspend_always final_suspend() noexcept {
+		std::suspend_never final_suspend() noexcept {
 			return p()->final_suspend();
 		}
 
@@ -966,19 +959,14 @@ namespace exathread {
 		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(*owner)};
 	}
 
-	inline Task::Task(std::coroutine_handle<details::PTypeBase> handle) : h(handle), pptr(h.promise().p()) {
-		++(pptr->handleRefCount);
-	}
+	inline Task::Task(std::coroutine_handle<details::PTypeBase> handle) : h(handle), pptr(h.promise().p()) {}
 
-	inline Task::Task(const Task& other) noexcept : h(other.h), pptr(other.pptr) {
-		if(h) ++(h.promise()->handleRefCount);
-	}
+	inline Task::Task(const Task& other) noexcept : h(other.h), pptr(other.pptr) {}
 
 	inline Task& Task::operator=(const Task& other) noexcept {
 		if(this != &other) {
 			h = other.h;
 			pptr = other.pptr;
-			if(h) ++(pptr->handleRefCount);
 		}
 		return *this;
 	}
@@ -993,14 +981,10 @@ namespace exathread {
 		return *this;
 	}
 
-	inline Task::~Task() noexcept {
-		if(!h) return;
-		if(!pptr) return;
-		if(pptr->handleRefCount == 0) return;
-		if(pptr->handleRefCount == 1) {
-			--(pptr->handleRefCount);
-			h.destroy();
-		}
+	inline bool Task::done() const noexcept {
+		if(!h || !pptr) return true;
+		Status s = pptr->status;
+		return s == Status::Complete || s == Status::Failed;
 	}
 
 	struct details::ThreadData {
@@ -1336,13 +1320,18 @@ namespace exathread {
 		//Loop
 		while(!stop.stop_requested()) {
 			//Check the yield list
+			std::vector<details::YieldOp> toResume;
 			for(auto it = data.yields.begin(); it != data.yields.end();) {
 				if(it->predicate()) {
-					it->task.promise().threadIdx = data.myIndex;
-					it->task.resume();
+					toResume.push_back(std::move(*it));
 					it = data.yields.erase(it);
-				} else
+				} else {
 					++it;
+				}
+			}
+			for(details::YieldOp& yield : toResume) {
+				yield.task.promise().threadIdx = data.myIndex;
+				yield.task.resume();
 			}
 
 			//Check the regular task queue
@@ -1853,7 +1842,6 @@ namespace exathread {
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-				t.handle().destroy();
 			}
 		};
 
@@ -1907,7 +1895,6 @@ namespace exathread {
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-				t.handle().destroy();
 			}
 		};
 
@@ -1961,7 +1948,6 @@ namespace exathread {
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-					t.handle().destroy();
 				}
 			};
 
@@ -2022,7 +2008,6 @@ namespace exathread {
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-					t.handle().destroy();
 				}
 			};
 
@@ -2067,7 +2052,6 @@ namespace exathread {
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-				t.handle().destroy();
 			}
 		};
 
@@ -2114,7 +2098,6 @@ namespace exathread {
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-				t.handle().destroy();
 			}
 		};
 
@@ -2161,7 +2144,6 @@ namespace exathread {
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-					t.handle().destroy();
 				}
 			};
 
@@ -2215,7 +2197,6 @@ namespace exathread {
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
-					t.handle().destroy();
 				}
 			};
 

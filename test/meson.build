@@ -20,7 +20,8 @@ tests = [
     'multifuture_construction',
     'corowrap_coroutine',
     'ringbuf_stress',
-    'all_scheduling'    
+    'all_scheduling',
+    'polymorphic_shared_ptr' 
 ]
 
 args = []
