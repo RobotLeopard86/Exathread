@@ -111,7 +111,6 @@ namespace exathread {
 	 */
 	class Task {
 	  private:
-		std::coroutine_handle<details::PTypeBase> h;
 		std::shared_ptr<details::Promise> pptr;
 
 	  public:
@@ -119,31 +118,17 @@ namespace exathread {
 		 * @brief Create a blank task
 		 */
 		Task() = default;
-
 		/**
 		 * @brief Create a task managing a coroutine
 		 */
-		explicit Task(std::coroutine_handle<details::PTypeBase> h);
+		Task(std::coroutine_handle<details::PTypeBase> h);
 
-		/**
-		 * @brief Copy construction
-		 */
-		Task(const Task& other) noexcept;
-
-		/**
-		 * @brief Copy assignment
-		 */
-		Task& operator=(const Task& other) noexcept;
-
-		/**
-		 * @brief Move construction
-		 */
-		Task(Task&& other) noexcept;
-
-		/**
-		 * @brief Move assignment
-		 */
-		Task& operator=(Task&& other) noexcept;
+		///@cond
+		Task(const Task& other) = default;
+		Task& operator=(const Task& other) = default;
+		Task(Task&& other) = default;
+		Task& operator=(Task&& other) = default;
+		///@endcond
 
 		/**
 		 * @brief Check if a task has completed execution
@@ -157,10 +142,14 @@ namespace exathread {
 		 *
 		 * @throws std::logic_error If the task is done
 		 */
-		void resume() {
-			if(done()) throw std::logic_error("Cannot resume an already-finished task!");
-			h.resume();
-		}
+		void resume();
+
+		/**
+		 * @brief Reset a task to a base state not managing any coroutine
+		 *
+		 * @throws std::logic_error If the task is not managing a coroutine
+		 */
+		void reset();
 
 		/**
 		 * @brief Access the underlying promise
@@ -187,15 +176,6 @@ namespace exathread {
 		}
 
 		/**
-		 * @brief Access the handle to the managed coroutine
-		 *
-		 * @return The coroutine handle
-		 */
-		std::coroutine_handle<details::PTypeBase> handle() noexcept {
-			return h;
-		}
-
-		/**
 		 * @brief Allows for tasks to be awaited until completion from other tasks
 		 *
 		 * @return An awaitable that will resume when this task completes
@@ -215,7 +195,7 @@ namespace exathread {
 		using value_type = void;
 		///@endcond
 
-		explicit VoidTask(std::coroutine_handle<details::PTypeBase> h) : Task(h) {}
+		VoidTask(std::coroutine_handle<details::PTypeBase> h) : Task(h) {}
 		VoidTask(Task&& t) : Task(std::move(t)) {}
 		VoidTask(VoidTask&& t) : Task(std::move(t)) {}
 	};
@@ -236,7 +216,7 @@ namespace exathread {
 		using value_type = T;
 		///@endcond
 
-		explicit ValueTask(std::coroutine_handle<details::PTypeBase> h) : Task(h) {}
+		ValueTask(std::coroutine_handle<details::PTypeBase> h) : Task(h) {}
 		ValueTask(Task&& t) : Task(std::move(t)) {}
 		ValueTask(ValueTask&& t) : Task(std::move(t)) {}
 	};
@@ -822,11 +802,12 @@ namespace exathread {
 
 namespace exathread {
 	struct details::Promise {
-		std::exception_ptr exception;		  //The stored result exception (if one is thrown)
-		Status status;						  //The status of the task
-		std::weak_ptr<Pool> pool;			  //The pool of execution
-		std::size_t threadIdx;				  //The index of the thread this task is running on
-		std::function<void(std::any)> arg1Set;//The setter for the first argument (used for late-binding for continuations)
+		std::coroutine_handle<details::PTypeBase> h;//The stored coroutine handle
+		std::exception_ptr exception;				//The stored result exception (if one is thrown)
+		Status status;								//The status of the task
+		std::weak_ptr<Pool> pool;					//The pool of execution
+		std::size_t threadIdx;						//The index of the thread this task is running on
+		std::function<void(std::any)> arg1Set;		//The setter for the first argument (used for late-binding for continuations)
 
 		void unhandled_exception() noexcept {
 			exception = std::current_exception();
@@ -842,7 +823,7 @@ namespace exathread {
 			return {};
 		}
 
-		virtual Task get_return_object() noexcept {
+		virtual std::coroutine_handle<details::PTypeBase> get_return_object() noexcept {
 			return {};
 		}
 
@@ -851,7 +832,7 @@ namespace exathread {
 
 	class details::PTypeBase {
 	  public:
-		Task get_return_object() noexcept {
+		std::coroutine_handle<details::PTypeBase> get_return_object() noexcept {
 			return p()->get_return_object();
 		}
 
@@ -882,7 +863,7 @@ namespace exathread {
 		VoidTask::promise_type* owner = nullptr;
 
 		void return_void() noexcept {}
-		Task get_return_object() noexcept override;
+		std::coroutine_handle<details::PTypeBase> get_return_object() noexcept override;
 		virtual ~VoidPromise() {}
 	};
 
@@ -909,8 +890,8 @@ namespace exathread {
 		std::shared_ptr<details::VoidPromise> promise;
 	};
 
-	inline Task details::VoidPromise::get_return_object() noexcept {
-		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(*owner)};
+	inline std::coroutine_handle<details::PTypeBase> details::VoidPromise::get_return_object() noexcept {
+		return std::coroutine_handle<details::PTypeBase>::from_promise(*owner);
 	}
 
 	template<typename T>
@@ -922,7 +903,7 @@ namespace exathread {
 		void return_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>) {
 			val = std::move(value);
 		}
-		Task get_return_object() noexcept override;
+		std::coroutine_handle<details::PTypeBase> get_return_object() noexcept override;
 		virtual ~ValuePromise() {}
 	};
 
@@ -955,36 +936,28 @@ namespace exathread {
 
 	template<typename T>
 		requires(!std::is_void_v<T>)
-	inline Task details::ValuePromise<T>::get_return_object() noexcept {
-		return Task {std::coroutine_handle<details::PTypeBase>::from_promise(*owner)};
+	inline std::coroutine_handle<details::PTypeBase> details::ValuePromise<T>::get_return_object() noexcept {
+		return std::coroutine_handle<details::PTypeBase>::from_promise(*owner);
 	}
 
-	inline Task::Task(std::coroutine_handle<details::PTypeBase> handle) : h(handle), pptr(h.promise().p()) {}
-
-	inline Task::Task(const Task& other) noexcept : h(other.h), pptr(other.pptr) {}
-
-	inline Task& Task::operator=(const Task& other) noexcept {
-		if(this != &other) {
-			h = other.h;
-			pptr = other.pptr;
-		}
-		return *this;
-	}
-
-	inline Task::Task(Task&& other) noexcept : h(std::exchange(other.h, {})), pptr(std::exchange(other.pptr, {})) {}
-
-	inline Task& Task::operator=(Task&& other) noexcept {
-		if(this != &other) {
-			h = std::exchange(other.h, {});
-			pptr = std::exchange(other.pptr, {});
-		}
-		return *this;
+	inline Task::Task(std::coroutine_handle<details::PTypeBase> handle) : pptr(handle.promise().p()) {
+		pptr->h = handle;
 	}
 
 	inline bool Task::done() const noexcept {
-		if(!h || !pptr) return true;
+		if(!pptr) return true;
 		Status s = pptr->status;
 		return s == Status::Complete || s == Status::Failed;
+	}
+
+	inline void Task::resume() {
+		if(done()) throw std::logic_error("Cannot resume an already-finished task!");
+		pptr->h.resume();
+	}
+
+	inline void Task::reset() {
+		if(!pptr) throw std::logic_error("Cannot reset a non-managing task!");
+		pptr.reset();
 	}
 
 	struct details::ThreadData {
@@ -1003,6 +976,7 @@ namespace exathread {
 	struct details::YieldOp {
 		std::function<bool()> predicate;
 		Task task;
+		bool suspended = false;
 
 		bool await_ready() {
 			return predicate();
@@ -1012,6 +986,7 @@ namespace exathread {
 			//Get the task and mark it as yielded
 			task = Task {h};
 			task.promise().status = Status::Yielded;
+			suspended = true;
 
 			//Store ourselves in the yield list
 			task.promise().pool.lock()->threads[task.promise().threadIdx].yields.push_back(*this);
@@ -1031,7 +1006,8 @@ namespace exathread {
 
 		void await_resume() {
 			//Mark the task as executing again
-			if(task.handle()) task.promise().status = Status::Executing;
+			if(!suspended) return;
+			if(task.promise().h) task.promise().status = Status::Executing;
 		}
 	};
 
@@ -1340,13 +1316,14 @@ namespace exathread {
 				try {
 					//Fetch the next task and run it
 					Task t = p->pop();
-					if(!t.handle()) {
+					if(!t.promise().h) {
 						//Somehow the task handle became invalid, and that means it can't be executed
 						continue;
 					}
 					t.promise().threadIdx = data.myIndex;
 					t.promise().status = Status::Executing;
 					t.resume();
+					if(t.done()) t.reset();
 				} catch(...) {}
 			}
 		}
@@ -1614,8 +1591,9 @@ namespace exathread {
 				if((++spinCounter % MAX_SPIN) == 0) std::this_thread::yield();
 			}
 
-			//Read from safe slot
-			Task t = std::move(s.t);
+			//Read from safe slot and invalidate after
+			Task t = s.t;
+			s.t.reset();
 
 			//Update sequence number
 			s.sequence.store(f1 + ringbuf.size(), std::memory_order_release);
@@ -1838,7 +1816,7 @@ namespace exathread {
 				setargs(*fut);
 
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				fut.task.promise().pool.lock()->push(t);
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -1891,7 +1869,7 @@ namespace exathread {
 				setargs(*fut);
 
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				fut.task.promise().pool.lock()->push(t);
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -1944,7 +1922,7 @@ namespace exathread {
 					setargs(*fut);
 
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+					fut.task.promise().pool.lock()->push(t);
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2004,7 +1982,7 @@ namespace exathread {
 					setargs(*fut);
 
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+					fut.task.promise().pool.lock()->push(t);
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2048,7 +2026,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(fut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				fut.task.promise().pool.lock()->push(t);
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2094,7 +2072,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(fut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				fut.task.promise().pool.lock()->push(t);
 			} else {
 				t.promise().status = Status::Failed;
 				t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2140,7 +2118,7 @@ namespace exathread {
 				//If we succeded, we're good
 				if(fut.checkStatus() == Status::Complete) {
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+					fut.task.promise().pool.lock()->push(t);
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2193,7 +2171,7 @@ namespace exathread {
 				//If we succeded, we're good
 				if(fut.checkStatus() == Status::Complete) {
 					//Schedule continuation
-					fut.task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+					fut.task.promise().pool.lock()->push(t);
 				} else {
 					t.promise().status = Status::Failed;
 					t.promise().exception = std::make_exception_ptr(std::runtime_error("Dependent task failed; could not execute continuation!"));
@@ -2244,7 +2222,7 @@ namespace exathread {
 				setargs(multifut.results());
 
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				multifut.futures[0].task.promise().pool.lock()->push(t);
 			}
 		};
 
@@ -2294,7 +2272,7 @@ namespace exathread {
 				setargs(multifut.results());
 
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				multifut.futures[0].task.promise().pool.lock()->push(t);
 			}
 		};
 
@@ -2382,7 +2360,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(multifut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				multifut.futures[0].task.promise().pool.lock()->push(t);
 			}
 		};
 
@@ -2425,7 +2403,7 @@ namespace exathread {
 			//If we succeded, we're good
 			if(multifut.checkStatus() == Status::Complete) {
 				//Schedule continuation
-				multifut.futures[0].task.promise().pool.lock()->push(const_cast<Task&>(static_cast<const Task&>(t)));
+				multifut.futures[0].task.promise().pool.lock()->push(t);
 			}
 		};
 
