@@ -70,12 +70,12 @@ namespace exathread {
 	/**
 	 * @brief The current state of a future
 	 */
-	enum class Status {
-		Pending,  ///<The task has not yet been scheduled for execution
-		Executing,///<The task is currently executing
-		Yielded,  ///<The task has yielded temporarily
-		Failed,	  ///<The task completed with an exception
-		Complete  ///<The task completed successfully
+	enum class Status : int8_t {
+		Pending = 0,  ///<The task has not yet been scheduled for execution
+		Executing = 1,///<The task is currently executing
+		Yielded = 2,  ///<The task has yielded temporarily
+		Failed = -1,  ///<The task completed with an exception
+		Complete = 3  ///<The task completed successfully
 	};
 
 	///@cond
@@ -804,7 +804,7 @@ namespace exathread {
 	struct details::Promise {
 		std::coroutine_handle<details::PTypeBase> h;//The stored coroutine handle
 		std::exception_ptr exception;				//The stored result exception (if one is thrown)
-		Status status;								//The status of the task
+		std::atomic<Status> status;					//The status of the task
 		std::weak_ptr<Pool> pool;					//The pool of execution
 		std::size_t threadIdx;						//The index of the thread this task is running on
 		std::function<void(std::any)> arg1Set;		//The setter for the first argument (used for late-binding for continuations)
@@ -1013,7 +1013,7 @@ namespace exathread {
 
 	inline details::YieldOp Task::operator co_await() {
 		details::YieldOp yld;
-		yld.predicate = [this]() { auto s = promise().status; return s == Status::Complete || s == Status::Failed; };
+		yld.predicate = [this]() { auto s = promise().status.load(std::memory_order_relaxed); return s == Status::Complete || s == Status::Failed; };
 		return yld;
 	}
 
