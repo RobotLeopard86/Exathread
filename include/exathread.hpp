@@ -1296,7 +1296,7 @@ namespace exathread {
 		//Loop
 		while(!stop.stop_requested()) {
 			//Check the yield list
-			std::vector<details::YieldOp> toResume;
+			static thread_local std::vector<details::YieldOp> toResume;
 			for(auto it = data.yields.begin(); it != data.yields.end();) {
 				if(it->predicate()) {
 					toResume.push_back(std::move(*it));
@@ -1309,6 +1309,7 @@ namespace exathread {
 				yield.task.promise().threadIdx = data.myIndex;
 				yield.task.resume();
 			}
+			toResume.clear();
 
 			//Check the regular task queue
 			if(p->queueSize() > 0) {
@@ -1326,6 +1327,9 @@ namespace exathread {
 					if(t.done()) t.reset();
 				} catch(...) {}
 			}
+
+			//Take a break to let the CPU chill
+			std::this_thread::yield();
 		}
 	}
 
