@@ -152,6 +152,15 @@ namespace exathread {
 		void reset();
 
 		/**
+		 * @brief Check if the task is valid (i.e. managing a coroutine)
+		 *
+		 * @return Management state
+		 */
+		bool valid() {
+			return (bool)pptr;
+		}
+
+		/**
 		 * @brief Access the underlying promise
 		 *
 		 * @return The promise data
@@ -1313,19 +1322,18 @@ namespace exathread {
 
 			//Check the regular task queue
 			if(p->queueSize() > 0) {
-				//We have to try/catch here in case we got suspended right before here and the queue has become empty
-				try {
-					//Fetch the next task and run it
-					Task t = p->pop();
+				//Fetch the next task and run it (invalid task returned for empty queue)
+				Task t = p->pop();
+				if(t.valid()) {
 					if(!t.promise().h) {
-						//Somehow the task handle became invalid, and that means it can't be executed
+						//Somehow the task handle became invalid even though the task itself claims to be valid, and that means it can't be executed
 						continue;
 					}
 					t.promise().threadIdx = data.myIndex;
 					t.promise().status = Status::Executing;
 					t.resume();
 					if(t.done()) t.reset();
-				} catch(...) {}
+				}
 			}
 
 			//Take a break to let the CPU chill
@@ -1566,7 +1574,7 @@ namespace exathread {
 			uint64_t spinCounter = 0;
 
 			//Check if empty
-			if(queueSize() <= 0) throw std::runtime_error("Queue is empty!");
+			if(queueSize() <= 0) return Task {};
 
 			//Reserve slot in ring buffer (CAS)
 			uint64_t f0 = 0, f1 = 0;
