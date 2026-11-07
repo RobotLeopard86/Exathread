@@ -1,7 +1,3 @@
-//Test 17: Task handle lifetime — verifies that the coroutine frame stays alive
-//as long as any Future referencing it exists, and that copy/move semantics
-//of Future correctly extend or transfer that lifetime.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

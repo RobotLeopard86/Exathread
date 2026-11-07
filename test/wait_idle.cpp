@@ -1,5 +1,3 @@
-//Test 11: Pool::waitIdle() blocks until the task queue is empty.
-
 #include "exathread.hpp"
 
 #include <atomic>

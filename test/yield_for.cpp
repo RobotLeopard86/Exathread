@@ -1,5 +1,3 @@
-//Test 08: yieldFor() suspends a coroutine task for at least the specified duration.
-
 #include "exathread.hpp"
 
 #include <atomic>

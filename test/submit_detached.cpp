@@ -1,6 +1,3 @@
-//Test 04: submitDetached() fires the task and does not return a future.
-//We verify the work actually ran by waiting for the pool to go idle.
-
 #include "exathread.hpp"
 
 #include <atomic>

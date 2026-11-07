@@ -1,8 +1,3 @@
-//Test 21: Ring buffer stress test focusing on head/tail pointer races.
-//We hammer the pool with enough tasks to wrap the ring buffer (capacity 4096)
-//multiple times, using multiple producer threads to stress the CAS loops in
-//push() and pop(). All results must be correct and no tasks may be lost.
-
 #include "exathread.hpp"
 
 #include <atomic>

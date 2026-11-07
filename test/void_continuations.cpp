@@ -1,7 +1,3 @@
-//Test 16: VoidPromise continuation scheduling.
-//Verifies that completing a void task fires all tasks in its `next` list,
-//covering VoidPromise::continuation() and the various void scheduling paths.
-
 #include "exathread.hpp"
 
 #include <atomic>

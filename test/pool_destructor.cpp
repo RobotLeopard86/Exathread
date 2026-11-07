@@ -1,5 +1,3 @@
-//Test 12: Destroying the pool waits for all enqueued tasks to finish.
-
 #include "exathread.hpp"
 
 #include <atomic>

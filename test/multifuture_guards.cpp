@@ -1,7 +1,3 @@
-//Test 13: MultiFuture construction error conditions.
-//- Empty list should throw std::length_error.
-//- Futures from different pools should throw std::logic_error.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

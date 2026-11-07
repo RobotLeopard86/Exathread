@@ -1,5 +1,3 @@
-//Test 19: MultiFuture initializer_list construction, size(), and in-progress status.
-
 #include "exathread.hpp"
 
 #include <atomic>

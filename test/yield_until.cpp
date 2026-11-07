@@ -1,5 +1,3 @@
-//Test 09: yieldUntilTrue() and yieldUntilComplete() resume correctly.
-
 #include "exathread.hpp"
 
 #include <atomic>

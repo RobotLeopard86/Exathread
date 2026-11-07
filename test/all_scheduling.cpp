@@ -1,10 +1,3 @@
-//Test 22: Exhaustive coverage of all Future<T> and MultiFuture<T> scheduling
-//functions not already covered by earlier tests:
-//  Future<T>::then, thenDetached, thenBatch, thenBatchDetached
-//  Future<void>::then, thenDetached, thenBatch, thenBatchDetached
-//  MultiFuture<T>::then, thenDetached, thenBatch, thenBatchDetached
-//  MultiFuture<void>::then, thenDetached
-
 #include "exathread.hpp"
 
 #include <atomic>

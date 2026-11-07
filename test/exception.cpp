@@ -1,6 +1,3 @@
-//Test 05: If the submitted task throws, the exception is stored and re-thrown
-//when the caller dereferences the Future.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

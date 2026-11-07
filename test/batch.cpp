@@ -1,7 +1,3 @@
-//Test 06: Pool::batch() dispatches one task per input element;
-//MultiFuture::results() collects them in submission order.
-//MultiFuture::size() returns the number of futures.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

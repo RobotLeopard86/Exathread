@@ -1,5 +1,3 @@
-//Test 07: Future::then() chaining — continuation receives prior result.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

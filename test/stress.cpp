@@ -1,6 +1,3 @@
-//Test 14: Stress test — many concurrent tasks with a value-returning function,
-//verifying correctness under real parallel load.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

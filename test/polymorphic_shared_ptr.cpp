@@ -1,15 +1,3 @@
-//Test 24: shared_ptr<Base> returned from a nested coroutine task, awaited via
-//yieldUntilComplete from another coroutine, then dynamic_pointer_cast to Derived.
-//Mirrors the ResourceManager::_AsyncLoadOpImpl / co_await yieldUntilComplete /
-//dynamic_pointer_cast pattern that crashes on the Arch laptop but not the Fedora desktop.
-//
-//Build standalone with ASan, bypassing Meson/Slang entirely:
-//  clang++ -std=c++20 -fsanitize=address,undefined -g -O0 -fno-omit-frame-pointer \
-//      test_24_shared_ptr_coro_chain.cpp -o test_24 -lpthread
-//
-//Run in a loop to surface timing-dependent corruption:
-//  for i in $(seq 1 200); do ./test_24 || break; done
-
 #include "exathread.hpp"
 #include <atomic>
 #include <cstdlib>
@@ -17,7 +5,7 @@
 #include <memory>
 #include <string>
 
-//---- Polymorphic hierarchy standing in for Resource / a concrete resource type ----
+//---- Polymorphic hierarchy ----
 
 static std::atomic<int> g_liveCount {0};
 
@@ -58,11 +46,11 @@ struct Unrelated : public Base {
 	}
 };
 
-//---- Inner coroutine: simulates _AsyncLoadOpImpl ----
+//---- Inner coroutine ----
 //Builds a shared_ptr<Base> (actually pointing at a Derived) and returns it.
 //Does NOT co_await anything internally on this path, matching the "cache miss,
 //no internal suspension" branch described as the one actually exercised.
-static exathread::ValueTask<std::shared_ptr<Base>> loadResourceImpl(int which) {
+static exathread::ValueTask<std::shared_ptr<Base>> inner(int which) {
 	std::shared_ptr<Base> result;
 	if(which % 3 == 0) {
 		result = std::make_shared<Unrelated>();
@@ -72,10 +60,10 @@ static exathread::ValueTask<std::shared_ptr<Base>> loadResourceImpl(int which) {
 	co_return result;
 }
 
-//---- Outer coroutine: simulates the ResourceManager-level co_await/cast pattern ----
-static exathread::ValueTask<std::shared_ptr<Derived>> requestResource(
+//---- Outer coroutine ----
+static exathread::ValueTask<std::shared_ptr<Derived>> outer(
 	std::shared_ptr<exathread::Pool> pool, int which) {
-	exathread::Future<std::shared_ptr<Base>> fut = pool->submit(loadResourceImpl, which);
+	exathread::Future<std::shared_ptr<Base>> fut = pool->submit(inner, which);
 	co_await exathread::yieldUntilComplete(fut);
 	std::shared_ptr<Base> result = *fut;
 
@@ -98,7 +86,7 @@ int main() {
 	int unrelatedMisses = 0;
 
 	for(int i = 0; i < kIterations; ++i) {
-		auto fut = pool->submit(requestResource, pool, i);
+		auto fut = pool->submit(outer, pool, i);
 		fut.await();
 		std::shared_ptr<Derived> d = *fut;
 

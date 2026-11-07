@@ -1,6 +1,3 @@
-//Test 01: Pool creation and thread count
-//Verifies Pool::Create(), getThreadCount(), and the thread-count limit guard.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

@@ -1,5 +1,3 @@
-//Test 03: submit() with a value-returning function; dereference Future to get result.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

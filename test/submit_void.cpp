@@ -1,5 +1,3 @@
-//Test 02: submit() with a void function, then Future::await() and checkStatus()
-
 #include "exathread.hpp"
 
 #include <atomic>

@@ -1,6 +1,3 @@
-//Test 18: Exception rethrow via operator*, const operator*, and operator->,
-//plus Failed task guards on then/thenDetached.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

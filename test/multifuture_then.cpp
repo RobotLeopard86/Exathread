@@ -1,6 +1,3 @@
-//Test 15: MultiFuture::then() schedules a single continuation that receives
-//all results as a std::vector<T>.
-
 #include "exathread.hpp"
 
 #include <cstdlib>

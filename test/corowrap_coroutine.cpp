@@ -1,9 +1,3 @@
-//Test 20: corowrap handles functions that are already coroutines.
-//When the submitted function returns VoidTask or ValueTask<T>, corowrap
-//wraps it in a trampoline that awaits the inner coroutine and propagates
-//both the return value and any exception. This exercises the
-//`if constexpr(std::is_base_of_v<Task, R>)` branch in corowrap.
-
 #include "exathread.hpp"
 
 #include <cstdlib>
